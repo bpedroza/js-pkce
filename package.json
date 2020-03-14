@@ -1,0 +1,23 @@
+{
+  "name": "js-pkce",
+  "version": "1.0.0",
+  "description": "This package helps to use the OAuth2 PKCE flow",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/testdouble/teenytest.git"
+  },
+  "scripts": {
+    "test": "cd unit && npm install && npm test",
+  },
+  "keywords": [
+    "oauth",
+    "oauth2",
+    "pkce"
+  ],
+  "author": "Bryan Pedroza",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^25.1.0"
+  }
+}
