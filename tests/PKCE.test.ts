@@ -1,5 +1,5 @@
-const PKCE = require('../lib/PKCE');
-
+import PKCE from '../src/PKCE';
+// @todo create validator class so testing is easier and concerns are separated.
 describe('Construction Test', () => {
   it('should not throw any exceptions', () => {
     const config = {

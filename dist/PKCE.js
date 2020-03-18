@@ -35,29 +35,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var PKCE = /** @class */ (function () {
     function PKCE(config) {
+        this.state = '';
+        this.codeVerifier = '';
         this.config = {
             client_id: '',
             redirect_uri: '',
             authorization_endpoint: '',
             token_endpoint: '',
-            requested_scopes: '*'
+            requested_scopes: '*',
         };
     }
-    PKCE.prototype.getState = function () {
-        if (typeof (this.state) === 'undefined') {
-            this.state = this.randomStringFromStorage('pkce_state');
-        }
-        return this.state;
-    };
-    PKCE.prototype.getCodeVerifier = function () {
-        if (typeof (this.codeVerifier) === 'undefined') {
-            this.codeVerifier = this.randomStringFromStorage('pkce_code_verifier');
-        }
-        return this.codeVerifier;
-    };
+    /**
+     * Generate the authorize url
+     * @return Promise<string>
+     */
     PKCE.prototype.authorizeUrl = function () {
         return __awaiter(this, void 0, void 0, function () {
             var codeChallenge, queryString;
@@ -66,14 +60,14 @@ var PKCE = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.pkceChallengeFromVerifier()];
                     case 1:
                         codeChallenge = _a.sent();
-                        queryString = this.generateQueryString({
+                        queryString = this.generateAuthQueryString({
                             response_type: 'code',
                             client_id: this.config.client_id,
                             state: this.getState(),
                             scope: this.config.requested_scopes,
                             redirect_uri: this.config.redirect_uri,
                             code_challenge: codeChallenge,
-                            code_challenge_method: 'S256'
+                            code_challenge_method: 'S256',
                         });
                         return [2 /*return*/, "" + this.config.authorization_endpoint + queryString];
                 }
@@ -96,33 +90,51 @@ var PKCE = /** @class */ (function () {
                 code: q.code,
                 client_id: _this.config.client_id,
                 redirect_uri: _this.config.redirect_uri,
-                code_verifier: _this.codeVerifier
+                code_verifier: _this.codeVerifier,
             };
             return fetch(url, {
                 method: 'POST',
                 body: JSON.stringify(data),
                 headers: {
                     Accept: 'application/json',
-                    'Content-Type': 'application/json;charset=UTF-8'
-                }
+                    'Content-Type': 'application/json;charset=UTF-8',
+                },
             }).then(function (response) { return response.json(); });
         });
     };
+    /**
+     * Base64 encode a given string.
+     * @param  {ArrayBuffer} str
+     * @return {string}
+     */
     PKCE.prototype.base64urlencode = function (str) {
         return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
             .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     };
+    /**
+     * Check the existing state against a given state
+     * @param {string} returnedState
+     */
     PKCE.prototype.checkState = function (returnedState) {
         if (returnedState !== this.getState()) {
             throw new Error('Invalid state');
         }
     };
+    /**
+     * Generate a random string
+     * @return {string}
+     */
     PKCE.prototype.generateRandomString = function () {
         var array = new Uint32Array(28);
         window.crypto.getRandomValues(array);
         return Array.from(array, function (dec) { return ("0" + dec.toString(16)).substr(-2); }).join('');
     };
-    PKCE.prototype.generateQueryString = function (options) {
+    /**
+     * Generate the query string for auth code exchange
+     * @param  {AuthQuery} options
+     * @return {string}
+     */
+    PKCE.prototype.generateAuthQueryString = function (options) {
         var query = '?';
         Object.entries(options).forEach(function (_a) {
             var key = _a[0], value = _a[1];
@@ -130,6 +142,30 @@ var PKCE = /** @class */ (function () {
         });
         return query.substring(0, (query.length - 1));
     };
+    /**
+     * Get the current codeVerifier or generate a new one
+     * @return {string}
+     */
+    PKCE.prototype.getCodeVerifier = function () {
+        if (this.codeVerifier === '') {
+            this.codeVerifier = this.randomStringFromStorage('pkce_code_verifier');
+        }
+        return this.codeVerifier;
+    };
+    /**
+     * Get the current state or generate a new one
+     * @return {string}
+     */
+    PKCE.prototype.getState = function () {
+        if (this.state === '') {
+            this.state = this.randomStringFromStorage('pkce_state');
+        }
+        return this.state;
+    };
+    /**
+     * Generate a code challenge
+     * @return {Promise<string>}
+     */
     PKCE.prototype.pkceChallengeFromVerifier = function () {
         return __awaiter(this, void 0, void 0, function () {
             var hashed;
@@ -149,16 +185,26 @@ var PKCE = /** @class */ (function () {
             error: params.get("error"),
             query: params.get("query"),
             state: params.get("state"),
-            code: params.get("code")
+            code: params.get("code"),
         };
     };
+    /**
+     * Get a random string from storage or store a new one and return it's value
+     * @param  {string} key
+     * @return string
+     */
     PKCE.prototype.randomStringFromStorage = function (key) {
         var fromStorage = sessionStorage.getItem(key);
         if (fromStorage === null) {
             sessionStorage.setItem(key, this.generateRandomString());
         }
-        return sessionStorage.getItem(key);
+        return sessionStorage.getItem(key) || '';
     };
+    /**
+     * Create SHA256 hash of given string
+     * @param  {string} plain
+     * @return PromiseLike<ArrayBuffer>
+     */
     PKCE.prototype.sha256 = function (plain) {
         var encoder = new TextEncoder();
         var data = encoder.encode(plain);
@@ -166,4 +212,4 @@ var PKCE = /** @class */ (function () {
     };
     return PKCE;
 }());
-exports["default"] = PKCE;
+exports.default = PKCE;

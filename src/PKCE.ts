@@ -1,18 +1,35 @@
-
 interface AuthQuery {
+  response_type: string,
+  client_id: string,
+  state: string,
+  scope: string,
+  redirect_uri: string,
+  code_challenge: string,
+  code_challenge_method: string,
+}
+
+interface AuthResponse {
   error: string | null,
   query: string | null,
   state: string | null,
   code: string | null,
 }
 
+interface Config {
+  client_id: string,
+  redirect_uri: string,
+  authorization_endpoint: string,
+  token_endpoint: string,
+  requested_scopes: string,
+}
+
 export default class PKCE {
 
-  private config;
-  private state;
-  private codeVerifier;
+  private config: Config;
+  private state: string = '';
+  private codeVerifier: string = '';
 
-  constructor(config) {
+  constructor(config: Config) {
     this.config = {
       client_id: '',
       redirect_uri: '',
@@ -22,26 +39,14 @@ export default class PKCE {
     };
   }
 
-  private getState(): string {
-    if (typeof (this.state) === 'undefined') {
-      this.state = this.randomStringFromStorage('pkce_state');
-    }
-
-    return this.state;
-  }
-
-  private getCodeVerifier(): string {
-    if (typeof (this.codeVerifier) === 'undefined') {
-      this.codeVerifier = this.randomStringFromStorage('pkce_code_verifier');
-    }
-
-    return this.codeVerifier;
-  }
-
-  public async authorizeUrl() {
+  /**
+   * Generate the authorize url
+   * @return Promise<string>
+   */
+  public async authorizeUrl(): Promise<string> {
     const codeChallenge = await this.pkceChallengeFromVerifier();
 
-    const queryString = this.generateQueryString({
+    const queryString = this.generateAuthQueryString({
       response_type: 'code',
       client_id: this.config.client_id,
       state: this.getState(),
@@ -57,7 +62,7 @@ export default class PKCE {
   public exchangeForAccessToken() {
     const queryParams = this.queryParams();
 
-    return new Promise<AuthQuery>((resolve) => {
+    return new Promise<AuthResponse>((resolve) => {
       if (queryParams.error) {
         throw new Error(queryParams.error);
       }
@@ -84,18 +89,30 @@ export default class PKCE {
     });
   }
 
-  private base64urlencode(str): string {
+  /**
+   * Base64 encode a given string.
+   * @param  {ArrayBuffer} str
+   * @return {string}
+   */
+  private base64urlencode(str: ArrayBuffer): string {
     return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
-
-  private checkState(returnedState) {
+  /**
+   * Check the existing state against a given state
+   * @param {string} returnedState
+   */
+  private checkState(returnedState: string | null): void {
     if (returnedState !== this.getState()) {
       throw new Error('Invalid state');
     }
   }
 
+  /**
+   * Generate a random string
+   * @return {string}
+   */
   private generateRandomString(): string {
     const array = new Uint32Array(28);
     window.crypto.getRandomValues(array);
@@ -103,7 +120,12 @@ export default class PKCE {
     return Array.from(array, dec => (`0${dec.toString(16)}`).substr(-2)).join('');
   }
 
-  private generateQueryString(options): string {
+  /**
+   * Generate the query string for auth code exchange
+   * @param  {AuthQuery} options
+   * @return {string}
+   */
+  private generateAuthQueryString(options: AuthQuery): string {
     let query = '?';
 
     Object.entries(options).forEach(([key, value]) => {
@@ -113,12 +135,40 @@ export default class PKCE {
     return query.substring(0, (query.length - 1));
   }
 
+  /**
+   * Get the current codeVerifier or generate a new one
+   * @return {string}
+   */
+  private getCodeVerifier(): string {
+    if (this.codeVerifier === '') {
+      this.codeVerifier = this.randomStringFromStorage('pkce_code_verifier');
+    }
+
+    return this.codeVerifier;
+  }
+
+  /**
+   * Get the current state or generate a new one
+   * @return {string}
+   */
+  private getState(): string {
+    if (this.state === '') {
+      this.state = this.randomStringFromStorage('pkce_state');
+    }
+
+    return this.state;
+  }
+
+  /**
+   * Generate a code challenge
+   * @return {Promise<string>}
+   */
   private async pkceChallengeFromVerifier(): Promise<string> {
     const hashed = await this.sha256(this.getCodeVerifier());
     return this.base64urlencode(hashed);
   }
 
-  private queryParams(): AuthQuery {
+  private queryParams(): AuthResponse {
     const params = new URL(window.location.href).searchParams;
 
     return {
@@ -129,16 +179,26 @@ export default class PKCE {
     };
   }
 
-  private randomStringFromStorage(key): string {
+  /**
+   * Get a random string from storage or store a new one and return it's value
+   * @param  {string} key
+   * @return string
+   */
+  private randomStringFromStorage(key: string): string {
     const fromStorage = sessionStorage.getItem(key);
     if (fromStorage === null) {
       sessionStorage.setItem(key, this.generateRandomString());
     }
 
-    return sessionStorage.getItem(key);
+    return sessionStorage.getItem(key) || '';
   }
 
-  private sha256(plain): PromiseLike<ArrayBuffer> {
+  /**
+   * Create SHA256 hash of given string
+   * @param  {string} plain
+   * @return PromiseLike<ArrayBuffer>
+   */
+  private sha256(plain: string): PromiseLike<ArrayBuffer> {
     const encoder = new TextEncoder();
     const data = encoder.encode(plain);
 
