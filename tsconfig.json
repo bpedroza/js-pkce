@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
     "lib": ["es6", "es2017.object", "dom"],
+    "declaration": true,
+    "esModuleInterop": true,
     "outDir": "dist",
     "target": "es5",
     "strict": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "**/__tests__/*"]
 }

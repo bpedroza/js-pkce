@@ -121,15 +121,6 @@ var PKCE = /** @class */ (function () {
         }
     };
     /**
-     * Generate a random string
-     * @return {string}
-     */
-    PKCE.prototype.generateRandomString = function () {
-        var array = new Uint32Array(28);
-        window.crypto.getRandomValues(array);
-        return Array.from(array, function (dec) { return ("0" + dec.toString(16)).substr(-2); }).join('');
-    };
-    /**
      * Generate the query string for auth code exchange
      * @param  {AuthQuery} options
      * @return {string}
@@ -141,6 +132,15 @@ var PKCE = /** @class */ (function () {
             query += key + "=" + encodeURIComponent(value.toString()) + "&";
         });
         return query.substring(0, (query.length - 1));
+    };
+    /**
+     * Generate a random string
+     * @return {string}
+     */
+    PKCE.prototype.generateRandomString = function () {
+        var array = new Uint32Array(28);
+        window.crypto.getRandomValues(array);
+        return Array.from(array, function (dec) { return ("0" + dec.toString(16)).substr(-2); }).join('');
     };
     /**
      * Get the current codeVerifier or generate a new one

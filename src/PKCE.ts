@@ -1,42 +1,39 @@
+import sha256 from 'crypto-js/sha256';
+import Base64 from 'crypto-js/enc-base64';
+import WordArray from 'crypto-js/lib-typedarrays';
+
 interface AuthQuery {
-  response_type: string,
-  client_id: string,
-  state: string,
-  scope: string,
-  redirect_uri: string,
-  code_challenge: string,
-  code_challenge_method: string,
+  response_type: string;
+  client_id: string;
+  state: string;
+  scope: string;
+  redirect_uri: string;
+  code_challenge: string;
+  code_challenge_method: string;
 }
 
 interface AuthResponse {
-  error: string | null,
-  query: string | null,
-  state: string | null,
-  code: string | null,
+  error: string | null;
+  query: string | null;
+  state: string | null;
+  code: string | null;
 }
 
 interface Config {
-  client_id: string,
-  redirect_uri: string,
-  authorization_endpoint: string,
-  token_endpoint: string,
-  requested_scopes: string,
+  client_id: string;
+  redirect_uri: string;
+  authorization_endpoint: string;
+  token_endpoint: string;
+  requested_scopes: string;
 }
 
 export default class PKCE {
-
   private config: Config;
   private state: string = '';
   private codeVerifier: string = '';
 
   constructor(config: Config) {
-    this.config = {
-      client_id: '',
-      redirect_uri: '',
-      authorization_endpoint: '',
-      token_endpoint: '',
-      requested_scopes: '*',
-    };
+    this.config = config;
   }
 
   /**
@@ -85,18 +82,8 @@ export default class PKCE {
           Accept: 'application/json',
           'Content-Type': 'application/json;charset=UTF-8',
         },
-      }).then(response => response.json());
+      }).then((response) => response.json());
     });
-  }
-
-  /**
-   * Base64 encode a given string.
-   * @param  {ArrayBuffer} str
-   * @return {string}
-   */
-  private base64urlencode(str: ArrayBuffer): string {
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
   /**
@@ -121,18 +108,7 @@ export default class PKCE {
       query += `${key}=${encodeURIComponent(value.toString())}&`;
     });
 
-    return query.substring(0, (query.length - 1));
-  }
-
-  /**
-   * Generate a random string
-   * @return {string}
-   */
-  private generateRandomString(): string {
-    const array = new Uint32Array(28);
-    window.crypto.getRandomValues(array);
-
-    return Array.from(array, dec => (`0${dec.toString(16)}`).substr(-2)).join('');
+    return query.substring(0, query.length - 1);
   }
 
   /**
@@ -164,18 +140,18 @@ export default class PKCE {
    * @return {Promise<string>}
    */
   private async pkceChallengeFromVerifier(): Promise<string> {
-    const hashed = await this.sha256(this.getCodeVerifier());
-    return this.base64urlencode(hashed);
+    const hashed = await sha256(this.getCodeVerifier());
+    return Base64.stringify(hashed);
   }
 
   private queryParams(): AuthResponse {
     const params = new URL(window.location.href).searchParams;
 
     return {
-      error: params.get("error"),
-      query: params.get("query"),
-      state: params.get("state"),
-      code: params.get("code"),
+      error: params.get('error'),
+      query: params.get('query'),
+      state: params.get('state'),
+      code: params.get('code'),
     };
   }
 
@@ -187,21 +163,9 @@ export default class PKCE {
   private randomStringFromStorage(key: string): string {
     const fromStorage = sessionStorage.getItem(key);
     if (fromStorage === null) {
-      sessionStorage.setItem(key, this.generateRandomString());
+      sessionStorage.setItem(key, WordArray.random(64));
     }
 
     return sessionStorage.getItem(key) || '';
-  }
-
-  /**
-   * Create SHA256 hash of given string
-   * @param  {string} plain
-   * @return PromiseLike<ArrayBuffer>
-   */
-  private sha256(plain: string): PromiseLike<ArrayBuffer> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-
-    return window.crypto.subtle.digest('SHA-256', data);
   }
 }
