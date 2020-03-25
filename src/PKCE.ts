@@ -110,17 +110,6 @@ export default class PKCE {
   }
 
   /**
-   * Generate a random string
-   * @return {string}
-   */
-  private generateRandomString(): string {
-    const array = new Uint32Array(28);
-    window.crypto.getRandomValues(array);
-
-    return Array.from(array, dec => (`0${dec.toString(16)}`).substr(-2)).join('');
-  }
-
-  /**
    * Generate the query string for auth code exchange
    * @param  {AuthQuery} options
    * @return {string}
@@ -133,6 +122,17 @@ export default class PKCE {
     });
 
     return query.substring(0, (query.length - 1));
+  }
+
+  /**
+   * Generate a random string
+   * @return {string}
+   */
+  private generateRandomString(): string {
+    const array = new Uint32Array(28);
+    window.crypto.getRandomValues(array);
+
+    return Array.from(array, dec => (`0${dec.toString(16)}`).substr(-2)).join('');
   }
 
   /**

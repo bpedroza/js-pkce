@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/testdouble/teenytest.git"
+    "url": "git+https://github.com/bpedroza/js-pkce.git"
   },
   "scripts": {
     "build": "tsc",
@@ -24,5 +24,9 @@
     "jest": "^25.1.0",
     "ts-jest": "^25.2.1"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "bugs": {
+    "url": "https://github.com/bpedroza/js-pkce/issues"
+  },
+  "homepage": "https://github.com/bpedroza/js-pkce/#readme"
 }
