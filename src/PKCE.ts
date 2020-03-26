@@ -1,38 +1,21 @@
 import sha256 from 'crypto-js/sha256';
 import Base64 from 'crypto-js/enc-base64';
 import WordArray from 'crypto-js/lib-typedarrays';
-
-interface AuthQuery {
-  response_type: string;
-  client_id: string;
-  state: string;
-  scope: string;
-  redirect_uri: string;
-  code_challenge: string;
-  code_challenge_method: string;
-}
-
-interface AuthResponse {
-  error: string | null;
-  query: string | null;
-  state: string | null;
-  code: string | null;
-}
-
-interface Config {
-  client_id: string;
-  redirect_uri: string;
-  authorization_endpoint: string;
-  token_endpoint: string;
-  requested_scopes: string;
-}
+import IAuthQuery from './IAuthQuery';
+import IAuthResponse from './IAuthResponse';
+import IConfig from './IConfig';
+import ITokenResponse from './ITokenResponse';
 
 export default class PKCE {
-  private config: Config;
+  private config: IConfig;
   private state: string = '';
   private codeVerifier: string = '';
 
-  constructor(config: Config) {
+  /**
+   * Initialize the instance with configuration
+   * @param {IConfig} config
+   */
+  constructor(config: IConfig) {
     this.config = config;
   }
 
@@ -40,8 +23,8 @@ export default class PKCE {
    * Generate the authorize url
    * @return Promise<string>
    */
-  public async authorizeUrl(): Promise<string> {
-    const codeChallenge = await this.pkceChallengeFromVerifier();
+  public authorizeUrl(): string {
+    const codeChallenge = this.pkceChallengeFromVerifier();
 
     const queryString = this.generateAuthQueryString({
       response_type: 'code',
@@ -56,17 +39,13 @@ export default class PKCE {
     return `${this.config.authorization_endpoint}${queryString}`;
   }
 
-  public exchangeForAccessToken() {
-    const queryParams = this.queryParams();
-
-    return new Promise<AuthResponse>((resolve) => {
-      if (queryParams.error) {
-        throw new Error(queryParams.error);
-      }
-      this.checkState(queryParams.state);
-      return resolve(queryParams);
-    }).then((q) => {
-      const url = this.config.token_endpoint;
+  /**
+   * Given the return url, get a token from the oauth server
+   * @param  url current urlwith params from server
+   * @return {Promise<ITokenResponse>}
+   */
+  public exchangeForAccessToken(url: string): Promise<ITokenResponse> {
+    return this.parseAuthResponseUrl(url).then((q) => {
       const data = {
         grant_type: 'authorization_code',
         code: q.code,
@@ -75,7 +54,7 @@ export default class PKCE {
         code_verifier: this.codeVerifier,
       };
 
-      return fetch(url, {
+      return fetch(this.config.token_endpoint, {
         method: 'POST',
         body: JSON.stringify(data),
         headers: {
@@ -87,21 +66,11 @@ export default class PKCE {
   }
 
   /**
-   * Check the existing state against a given state
-   * @param {string} returnedState
-   */
-  private checkState(returnedState: string | null): void {
-    if (returnedState !== this.getState()) {
-      throw new Error('Invalid state');
-    }
-  }
-
-  /**
    * Generate the query string for auth code exchange
-   * @param  {AuthQuery} options
+   * @param  {IAuthQuery} options
    * @return {string}
    */
-  private generateAuthQueryString(options: AuthQuery): string {
+  private generateAuthQueryString(options: IAuthQuery): string {
     let query = '?';
 
     Object.entries(options).forEach(([key, value]) => {
@@ -136,29 +105,34 @@ export default class PKCE {
   }
 
   /**
-   * Generate a code challenge
-   * @return {Promise<string>}
+   * Get the query params as json from a auth response url
+   * @param  {string} url a url expected to have AuthResponse params
+   * @return {Promise<IAuthResponse>}
    */
-  private async pkceChallengeFromVerifier(): Promise<string> {
-    const hashed = await sha256(this.getCodeVerifier());
-    return Base64.stringify(hashed);
-  }
+  private parseAuthResponseUrl(url: string): Promise<IAuthResponse> {
+    const params = new URL(url).searchParams;
 
-  private queryParams(): AuthResponse {
-    const params = new URL(window.location.href).searchParams;
-
-    return {
+    return this.validateAuthResponse({
       error: params.get('error'),
       query: params.get('query'),
       state: params.get('state'),
       code: params.get('code'),
-    };
+    });
+  }
+
+  /**
+   * Generate a code challenge
+   * @return {Promise<string>}
+   */
+  private pkceChallengeFromVerifier(): string {
+    const hashed = sha256(this.getCodeVerifier());
+    return Base64.stringify(hashed);
   }
 
   /**
    * Get a random string from storage or store a new one and return it's value
    * @param  {string} key
-   * @return string
+   * @return {string}
    */
   private randomStringFromStorage(key: string): string {
     const fromStorage = sessionStorage.getItem(key);
@@ -167,5 +141,24 @@ export default class PKCE {
     }
 
     return sessionStorage.getItem(key) || '';
+  }
+
+  /**
+   * Validates params from auth response
+   * @param  {AuthResponse} queryParams
+   * @return {Promise<IAuthResponse>}
+   */
+  private validateAuthResponse(queryParams: IAuthResponse): Promise<IAuthResponse> {
+    return new Promise<IAuthResponse>((resolve, reject) => {
+      if (queryParams.error) {
+        return reject({ error: queryParams.error });
+      }
+
+      if (queryParams.state !== this.getState()) {
+        return reject({ error: 'Invalid State' });
+      }
+
+      return resolve(queryParams);
+    });
   }
 }

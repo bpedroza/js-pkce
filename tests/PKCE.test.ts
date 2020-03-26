@@ -9,9 +9,9 @@ const config = {
 };
 
 describe('Test PKCE functionality', () => {
-  it('Should build an authorization url', async () => {
+  it('Should build an authorization url', () => {
     const instance = new PKCE(config);
-    const url = await instance.authorizeUrl();
+    const url = instance.authorizeUrl();
 
     expect(url).toContain(config.authorization_endpoint);
     expect(url).toContain('?response_type=code');
@@ -21,5 +21,33 @@ describe('Test PKCE functionality', () => {
     expect(url).toContain('&redirect_uri=' + encodeURIComponent(config.redirect_uri));
     expect(url).toContain('&code_challenge=');
     expect(url).toContain('&code_challenge_method=S256');
+  });
+
+  it('Should throw an error when error is present', async () => {
+    expect.assertions(1);
+    const url = 'https://example.com?error=Test+Failure';
+    const instance = new PKCE(config);
+
+    try {
+      const token = await instance.exchangeForAccessToken(url);
+    } catch (e) {
+      expect(e).toEqual({
+        error: 'Test Failure',
+      });
+    }
+  });
+
+  it('Should throw an error when state mismatch', async () => {
+    expect.assertions(1);
+    const url = 'https://example.com?state=invalid';
+    const instance = new PKCE(config);
+
+    try {
+      const token = await instance.exchangeForAccessToken(url);
+    } catch (e) {
+      expect(e).toEqual({
+        error: 'Invalid State',
+      });
+    }
   });
 });
