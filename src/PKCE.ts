@@ -126,10 +126,7 @@ export default class PKCE {
    */
   private pkceChallengeFromVerifier(): string {
     const hashed = sha256(this.getCodeVerifier());
-    return Base64.stringify(hashed)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+    return Base64.stringify(hashed).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
   /**

@@ -1,6 +1,6 @@
 {
   "name": "js-pkce",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A package that makes using the OAuth2 PKCE flow easier",
   "main": "dist/PKCE.js",
   "types": "dist/PKCE.d.ts",
@@ -14,11 +14,11 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "tslint -p tsconfig.json",
     "test": "jest ./tests",
-    "prepare" : "npm run build",
-    "prepublishOnly" : "npm test && npm run lint",
-    "preversion" : "npm run lint",
-    "version" : "npm run format && git add -A src",
-    "postversion" : "git push && git push --tags"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
   },
   "keywords": [
     "oauth",
