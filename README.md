@@ -1,4 +1,42 @@
 # js-pkce
 A package that makes using the OAuth2 PKCE flow easier
 
-I have a version of this code working in a personal project. I figured making this open source could potentially help others. Still a work in progress for now.
+## Installation
+`npm i js-pkce`
+
+## Create a new instance
+Create a new instance of js-pkce with all of the details needed.
+
+```javascript
+import PKCE from 'js-pkce';
+const pkce = new PKCE({
+    client_id: 'myclientid',
+    redirect_uri: 'http://localhost:8080/auth',
+    authorization_endpoint: 'https://authserver.com/oauth/authorize',
+    token_endpoint: 'https://authserver.com/oauth/token',
+    requested_scopes: '*',
+  });
+```
+
+## Start the authorization process
+Typically you just need to go to the authorization url to start the process.
+This example is something that might work in a SPA.
+
+```javascript
+window.location.replace(pkce.authorizeUrl());
+```
+
+## Trade the code for a token
+After logging in with the authorization server, you will be redirected to the value in
+the `redirect_uri` parameter you set when creating the instance.
+Again, this is an example that might work for a SPA.
+
+When you get back here, you need to exchange the code for a token.
+
+```javascript
+const url = window.location.href;
+  return this.#pkce.exchangeForAccessToken(url).then((resp) => {
+    const token = resp.access_token;
+    // Do stuff with the access token.
+  });
+```
