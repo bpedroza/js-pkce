@@ -21,6 +21,7 @@ describe('Test PKCE authorization url', () => {
     expect(url).toContain('&scope=*');
     expect(url).toContain('&redirect_uri=' + encodeURIComponent(config.redirect_uri));
     expect(url).toContain('&code_challenge=');
+    expect(url).not.toContain('%3D');
     expect(url).toContain('&code_challenge_method=S256');
   });
 });

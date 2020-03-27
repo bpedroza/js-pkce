@@ -2,7 +2,8 @@
   "name": "js-pkce",
   "version": "1.0.0",
   "description": "A package that makes using the OAuth2 PKCE flow easier",
-  "main": "index.js",
+  "main": "dist/PKCE.js",
+  "types": "dist/PKCE.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bpedroza/js-pkce.git"
