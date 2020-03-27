@@ -1,4 +1,5 @@
 import PKCE from '../src/PKCE';
+import fetch from 'jest-fetch-mock';
 
 const config = {
   client_id: '42',
@@ -8,7 +9,7 @@ const config = {
   requested_scopes: "*"
 };
 
-describe('Test PKCE functionality', () => {
+describe('Test PKCE authorization url', () => {
   it('Should build an authorization url', () => {
     const instance = new PKCE(config);
     const url = instance.authorizeUrl();
@@ -22,7 +23,9 @@ describe('Test PKCE functionality', () => {
     expect(url).toContain('&code_challenge=');
     expect(url).toContain('&code_challenge_method=S256');
   });
+});
 
+describe('Test PKCE exchange code for token', () => {
   it('Should throw an error when error is present', async () => {
     expect.assertions(1);
     const url = 'https://example.com?error=Test+Failure';
@@ -49,5 +52,26 @@ describe('Test PKCE functionality', () => {
         error: 'Invalid State',
       });
     }
+  });
+
+  it('Should make a request to token endpoint', async () => {
+    sessionStorage.setItem('pkce_state', 'teststate');
+    const url = 'https://example.com?state=teststate';
+    const instance = new PKCE(config);
+
+    const mockSuccessResponse = {
+      access_token: 'token',
+      expires_in: 123,
+      refresh_expires_in: 234,
+      refresh_token: 'refresh',
+      scope: '*',
+      token_type: 'type',
+    };
+    fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
+
+    const token = await instance.exchangeForAccessToken(url);
+
+    expect(fetch.mock.calls.length).toEqual(1)
+    expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint)
   });
 });

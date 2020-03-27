@@ -3,5 +3,5 @@ module.exports = {
   testEnvironment: 'node',
   testRegex: '/tests/.*\\.(test|spec)?\\.(ts|tsx)$',
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  setupFiles: ["jest-localstorage-mock"]
+  setupFiles: ["jest-localstorage-mock", "./setupJest.js"]
 };
