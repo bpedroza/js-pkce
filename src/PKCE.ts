@@ -51,7 +51,7 @@ export default class PKCE {
         code: q.code,
         client_id: this.config.client_id,
         redirect_uri: this.config.redirect_uri,
-        code_verifier: this.codeVerifier,
+        code_verifier: this.getCodeVerifier(),
       };
 
       return fetch(this.config.token_endpoint, {

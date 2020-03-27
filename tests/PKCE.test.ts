@@ -70,8 +70,10 @@ describe('Test PKCE exchange code for token', () => {
     };
     fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
 
+    sessionStorage.removeItem('pkce_code_verifier');
     const token = await instance.exchangeForAccessToken(url);
 
+    expect(sessionStorage.getItem('pkce_code_verifier')).not.toEqual(null);
     expect(fetch.mock.calls.length).toEqual(1)
     expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint)
   });
