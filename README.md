@@ -10,12 +10,12 @@ Create a new instance of js-pkce with all of the details needed.
 ```javascript
 import PKCE from 'js-pkce';
 const pkce = new PKCE({
-    client_id: 'myclientid',
-    redirect_uri: 'http://localhost:8080/auth',
-    authorization_endpoint: 'https://authserver.com/oauth/authorize',
-    token_endpoint: 'https://authserver.com/oauth/token',
-    requested_scopes: '*',
-  });
+  client_id: 'myclientid',
+  redirect_uri: 'http://localhost:8080/auth',
+  authorization_endpoint: 'https://authserver.com/oauth/authorize',
+  token_endpoint: 'https://authserver.com/oauth/token',
+  requested_scopes: '*',
+});
 ```
 
 ## Start the authorization process
@@ -35,8 +35,8 @@ When you get back here, you need to exchange the code for a token.
 
 ```javascript
 const url = window.location.href;
-  return this.#pkce.exchangeForAccessToken(url).then((resp) => {
-    const token = resp.access_token;
-    // Do stuff with the access token.
-  });
+pkce.exchangeForAccessToken(url).then((resp) => {
+  const token = resp.access_token;
+  // Do stuff with the access token.
+});
 ```
