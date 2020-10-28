@@ -1,6 +1,6 @@
 {
   "name": "js-pkce",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A package that makes using the OAuth2 PKCE flow easier",
   "main": "dist/PKCE.js",
   "types": "dist/PKCE.d.ts",
