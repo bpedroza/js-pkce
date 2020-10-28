@@ -46,20 +46,18 @@ export default class PKCE {
    */
   public exchangeForAccessToken(url: string): Promise<ITokenResponse> {
     return this.parseAuthResponseUrl(url).then((q) => {
-      const data = {
-        grant_type: 'authorization_code',
-        code: q.code,
-        client_id: this.config.client_id,
-        redirect_uri: this.config.redirect_uri,
-        code_verifier: this.getCodeVerifier(),
-      };
-
       return fetch(this.config.token_endpoint, {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: new URLSearchParams([
+          ['grant_type', 'authorization_code'],
+          ['code', q.code],
+          ['client_id', this.config.client_id],
+          ['redirect_uri', this.config.redirect_uri],
+          ['code_verifier', this.getCodeVerifier()],
+        ]),
         headers: {
           Accept: 'application/json',
-          'Content-Type': 'application/json;charset=UTF-8',
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
       }).then((response) => response.json());
     });
