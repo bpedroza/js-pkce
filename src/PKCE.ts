@@ -1,7 +1,6 @@
 import sha256 from 'crypto-js/sha256';
 import Base64 from 'crypto-js/enc-base64';
 import WordArray from 'crypto-js/lib-typedarrays';
-import IAuthQuery from './IAuthQuery';
 import IAuthResponse from './IAuthResponse';
 import IConfig from './IConfig';
 import ITokenResponse from './ITokenResponse';
@@ -21,61 +20,58 @@ export default class PKCE {
 
   /**
    * Generate the authorize url
+   * @param  {object} additionalParams include additional parameters in the query
    * @return Promise<string>
    */
-  public authorizeUrl(): string {
+  public authorizeUrl(additionalParams: object = {}): string {
     const codeChallenge = this.pkceChallengeFromVerifier();
 
-    const queryString = this.generateAuthQueryString({
-      response_type: 'code',
-      client_id: this.config.client_id,
-      state: this.getState(),
-      scope: this.config.requested_scopes,
-      redirect_uri: this.config.redirect_uri,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
-    });
+    const queryString = new URLSearchParams(
+      Object.assign(
+        {
+          response_type: 'code',
+          client_id: this.config.client_id,
+          state: this.getState(),
+          scope: this.config.requested_scopes,
+          redirect_uri: this.config.redirect_uri,
+          code_challenge: codeChallenge,
+          code_challenge_method: 'S256',
+        },
+        additionalParams,
+      ),
+    ).toString();
 
-    return `${this.config.authorization_endpoint}${queryString}`;
+    return `${this.config.authorization_endpoint}?${queryString}`;
   }
 
   /**
    * Given the return url, get a token from the oauth server
    * @param  url current urlwith params from server
+   * @param  {object} additionalParams include additional parameters in the request body
    * @return {Promise<ITokenResponse>}
    */
-  public exchangeForAccessToken(url: string): Promise<ITokenResponse> {
+  public exchangeForAccessToken(url: string, additionalParams: object = {}): Promise<ITokenResponse> {
     return this.parseAuthResponseUrl(url).then((q) => {
       return fetch(this.config.token_endpoint, {
         method: 'POST',
-        body: new URLSearchParams([
-          ['grant_type', 'authorization_code'],
-          ['code', q.code],
-          ['client_id', this.config.client_id],
-          ['redirect_uri', this.config.redirect_uri],
-          ['code_verifier', this.getCodeVerifier()],
-        ]),
+        body: new URLSearchParams(
+          Object.assign(
+            {
+              grant_type: 'authorization_code',
+              code: q.code,
+              client_id: this.config.client_id,
+              redirect_uri: this.config.redirect_uri,
+              code_verifier: this.getCodeVerifier(),
+            },
+            additionalParams,
+          ),
+        ),
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
       }).then((response) => response.json());
     });
-  }
-
-  /**
-   * Generate the query string for auth code exchange
-   * @param  {IAuthQuery} options
-   * @return {string}
-   */
-  private generateAuthQueryString(options: IAuthQuery): string {
-    let query = '?';
-
-    Object.entries(options).forEach(([key, value]) => {
-      query += `${key}=${encodeURIComponent(value.toString())}&`;
-    });
-
-    return query.substring(0, query.length - 1);
   }
 
   /**

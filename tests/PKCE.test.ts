@@ -24,6 +24,16 @@ describe('Test PKCE authorization url', () => {
     expect(url).not.toContain('%3D');
     expect(url).toContain('&code_challenge_method=S256');
   });
+
+  it('Should include additional parameters', () => {
+    const instance = new PKCE(config);
+    const url = instance.authorizeUrl({test_param: 'test'});
+
+    expect(url).toContain(config.authorization_endpoint);
+    expect(url).toContain('?response_type=code');
+    expect(url).toContain('&client_id=' + config.client_id);
+    expect(url).toContain('&test_param=test');
+  });
 });
 
 describe('Test PKCE exchange code for token', () => {
@@ -56,8 +66,48 @@ describe('Test PKCE exchange code for token', () => {
   });
 
   it('Should make a request to token endpoint', async () => {
+    await mockRequest();
+
+    expect(fetch.mock.calls.length).toEqual(1);
+    expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint);
+  });
+
+  it('Should set code verifier', async () => {
+    await mockRequest();
+
+    expect(sessionStorage.getItem('pkce_code_verifier')).not.toEqual(null);
+  });
+
+  it('Should request with headers', async () => {
+    await mockRequest();
+    const headers = fetch.mock.calls[0][1].headers;
+
+    expect(headers['Accept']).toEqual('application/json');
+    expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
+  });
+
+  it('Should request with body', async () => {
+    await mockRequest();
+    const body = new URLSearchParams(fetch.mock.calls[0][1].body.toString());
+
+    expect(body.get('grant_type')).toEqual('authorization_code');
+    expect(body.get('code')).toEqual('123');
+    expect(body.get('client_id')).toEqual(config.client_id);
+    expect(body.get('redirect_uri')).toEqual(config.redirect_uri);
+    expect(body.get('code_verifier')).not.toEqual(null);
+  });
+
+  it('Should request with additional parameters', async () => {
+    await mockRequest({test_param: 'testing'});
+    const body = new URLSearchParams(fetch.mock.calls[0][1].body.toString());
+
+    expect(body.get('grant_type')).toEqual('authorization_code');
+    expect(body.get('test_param')).toEqual('testing');
+  });
+
+  async function mockRequest(additionalParams: object = {}) {
     sessionStorage.setItem('pkce_state', 'teststate');
-    const url = 'https://example.com?state=teststate';
+    const url = 'https://example.com?state=teststate&code=123';
     const instance = new PKCE(config);
 
     const mockSuccessResponse = {
@@ -68,13 +118,12 @@ describe('Test PKCE exchange code for token', () => {
       scope: '*',
       token_type: 'type',
     };
+
+    fetch.resetMocks();
     fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
 
     sessionStorage.removeItem('pkce_code_verifier');
-    const token = await instance.exchangeForAccessToken(url);
 
-    expect(sessionStorage.getItem('pkce_code_verifier')).not.toEqual(null);
-    expect(fetch.mock.calls.length).toEqual(1)
-    expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint)
-  });
+    await instance.exchangeForAccessToken(url, additionalParams);
+  }
 });
