@@ -26,6 +26,13 @@ This example is something that might work in a SPA.
 window.location.replace(pkce.authorizeUrl());
 ```
 
+You may add additional query parameters to the authorize url by using an optional second parameter:
+
+```javascript
+const additionalParams = {test_param: 'testing'};
+window.location.replace(pkce.authorizeUrl(additionalParams));
+```
+
 ## Trade the code for a token
 After logging in with the authorization server, you will be redirected to the value in
 the `redirect_uri` parameter you set when creating the instance.
@@ -36,6 +43,19 @@ When you get back here, you need to exchange the code for a token.
 ```javascript
 const url = window.location.href;
 pkce.exchangeForAccessToken(url).then((resp) => {
+  const token = resp.access_token;
+  // Do stuff with the access token.
+});
+```
+
+As with the authorizeUrl method, an optional second parameter may be passed to
+the `exchangeForAccessToken` method to send additional parameters to the request:
+
+```javascript
+const url = window.location.href;
+const additionalParams = {test_param: 'testing'};
+
+pkce.exchangeForAccessToken(url, additionalParams).then((resp) => {
   const token = resp.access_token;
   // Do stuff with the access token.
 });
