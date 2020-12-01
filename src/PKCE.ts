@@ -61,7 +61,7 @@ export default class PKCE {
               code: q.code,
               client_id: this.config.client_id,
               redirect_uri: this.config.redirect_uri,
-              code_verifier: this.getCodeVerifier(),
+              code_verifier: this.getCodeVerifier(true),
             },
             additionalParams,
           ),
@@ -78,9 +78,12 @@ export default class PKCE {
    * Get the current codeVerifier or generate a new one
    * @return {string}
    */
-  private getCodeVerifier(): string {
+  private getCodeVerifier(clear: boolean = false): string {
     if (this.codeVerifier === '') {
       this.codeVerifier = this.randomStringFromStorage('pkce_code_verifier');
+    } 
+    if (clear) {
+      localStorage.removeItem('pkce_code_verifier');
     }
 
     return this.codeVerifier;
@@ -90,9 +93,12 @@ export default class PKCE {
    * Get the current state or generate a new one
    * @return {string}
    */
-  private getState(): string {
+  private getState(clear: boolean = false): string {
     if (this.state === '') {
       this.state = this.randomStringFromStorage('pkce_state');
+    } 
+    if (clear) {
+      localStorage.removeItem('pkce_state');
     }
 
     return this.state;
@@ -129,12 +135,12 @@ export default class PKCE {
    * @return {string}
    */
   private randomStringFromStorage(key: string): string {
-    const fromStorage = sessionStorage.getItem(key);
+    const fromStorage = localStorage.getItem(key);
     if (fromStorage === null) {
-      sessionStorage.setItem(key, WordArray.random(64));
+      localStorage.setItem(key, WordArray.random(64));
     }
 
-    return sessionStorage.getItem(key) || '';
+    return localStorage.getItem(key) || '';
   }
 
   /**
@@ -148,7 +154,7 @@ export default class PKCE {
         return reject({ error: queryParams.error });
       }
 
-      if (queryParams.state !== this.getState()) {
+      if (queryParams.state !== this.getState(true)) {
         return reject({ error: 'Invalid State' });
       }
 
