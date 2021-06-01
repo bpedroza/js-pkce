@@ -47,6 +47,6 @@
   },
   "homepage": "https://github.com/bpedroza/js-pkce/#readme",
   "files": [
-    "lib/**/*"
+    "dist/**/*"
   ]
 }
