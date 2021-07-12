@@ -34,6 +34,14 @@ describe('Test PKCE authorization url', () => {
     expect(url).toContain('&client_id=' + config.client_id);
     expect(url).toContain('&test_param=test');
   });
+
+  it('Should update state from additional params', async () => {
+    const instance = new PKCE(config);
+    const url = instance.authorizeUrl({state: 'Anewteststate'});
+
+    expect(url).toContain('&state=Anewteststate');
+    expect(sessionStorage.getItem('pkce_state')).toEqual('Anewteststate');
+  });
 });
 
 describe('Test PKCE exchange code for token', () => {

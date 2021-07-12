@@ -3,6 +3,7 @@ import Base64 from 'crypto-js/enc-base64';
 import WordArray from 'crypto-js/lib-typedarrays';
 import IAuthResponse from './IAuthResponse';
 import IConfig from './IConfig';
+import IObject from './IObject';
 import ITokenResponse from './ITokenResponse';
 
 export default class PKCE {
@@ -23,7 +24,7 @@ export default class PKCE {
    * @param  {object} additionalParams include additional parameters in the query
    * @return Promise<string>
    */
-  public authorizeUrl(additionalParams: object = {}): string {
+  public authorizeUrl(additionalParams: IObject = {}): string {
     const codeChallenge = this.pkceChallengeFromVerifier();
 
     const queryString = new URLSearchParams(
@@ -31,7 +32,7 @@ export default class PKCE {
         {
           response_type: 'code',
           client_id: this.config.client_id,
-          state: this.getState(),
+          state: this.getState(additionalParams.state || null),
           scope: this.config.requested_scopes,
           redirect_uri: this.config.redirect_uri,
           code_challenge: codeChallenge,
@@ -50,7 +51,7 @@ export default class PKCE {
    * @param  {object} additionalParams include additional parameters in the request body
    * @return {Promise<ITokenResponse>}
    */
-  public exchangeForAccessToken(url: string, additionalParams: object = {}): Promise<ITokenResponse> {
+  public exchangeForAccessToken(url: string, additionalParams: IObject = {}): Promise<ITokenResponse> {
     return this.parseAuthResponseUrl(url).then((q) => {
       return fetch(this.config.token_endpoint, {
         method: 'POST',
@@ -90,9 +91,15 @@ export default class PKCE {
    * Get the current state or generate a new one
    * @return {string}
    */
-  private getState(): string {
+  private getState(explicit: string = null): string {
+    const stateKey = 'pkce_state';
+
+    if (explicit !== null) {
+      sessionStorage.setItem(stateKey, explicit);
+    }
+
     if (this.state === '') {
-      this.state = this.randomStringFromStorage('pkce_state');
+      this.state = this.randomStringFromStorage(stateKey);
     }
 
     return this.state;
