@@ -60,3 +60,18 @@ pkce.exchangeForAccessToken(url, additionalParams).then((resp) => {
   // Do stuff with the access token.
 });
 ```
+
+## A note on Storage
+By default, this package will use `sessionStorage` to persist the `pkce_state`. On (mostly) mobile
+devices there's a higher chance users are returning in a different browser tab. E.g. they kick off
+in a WebView & get redirected to a new tab. The `sessionStorage` will be empty there.
+
+In this case it you can opt in to use `localStorage` instead of `sessionStorage`:
+
+```javascript
+import PKCE from 'js-pkce';
+const pkce = new PKCE({
+  // ...
+  storage_type: 'localStorage', // sessionStorage (default) or localStorage 
+});
+```

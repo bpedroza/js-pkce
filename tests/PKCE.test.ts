@@ -6,7 +6,7 @@ const config = {
   redirect_uri: 'http://localhost:8080/',
   authorization_endpoint: 'https://example.com/auth',
   token_endpoint: 'https://example.com/token',
-  requested_scopes: "*"
+  requested_scopes: '*',
 };
 
 describe('Test PKCE authorization url', () => {
@@ -134,4 +134,28 @@ describe('Test PKCE exchange code for token', () => {
 
     await instance.exchangeForAccessToken(url, additionalParams);
   }
+});
+
+describe('Test storage types', () => {
+  it('Should default to sessionStorage, localStorage emtpy', async () => {
+    sessionStorage.removeItem('pkce_code_verifier');
+    localStorage.removeItem('pkce_code_verifier');
+
+    const instance = new PKCE({ ...config });
+    instance.authorizeUrl();
+
+    expect(sessionStorage.getItem('pkce_code_verifier')).not.toEqual(null);
+    expect(localStorage.getItem('pkce_code_verifier')).toEqual(null);    
+  });
+
+  it('Should allow for using localStorage, sessionStorage emtpy', async () => {
+    sessionStorage.removeItem('pkce_code_verifier');
+    localStorage.removeItem('pkce_code_verifier');
+
+    const instance = new PKCE({ ...config, storage_type: 'localStorage' });
+    instance.authorizeUrl();
+
+    expect(sessionStorage.getItem('pkce_code_verifier')).toEqual(null);
+    expect(localStorage.getItem('pkce_code_verifier')).not.toEqual(null);
+  });
 });
