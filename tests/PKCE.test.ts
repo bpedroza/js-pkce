@@ -152,7 +152,7 @@ describe('Test storage types', () => {
     sessionStorage.removeItem('pkce_code_verifier');
     localStorage.removeItem('pkce_code_verifier');
 
-    const instance = new PKCE({ ...config, storage_type: 'localStorage' });
+    const instance = new PKCE({ ...config, storage: localStorage });
     instance.authorizeUrl();
 
     expect(sessionStorage.getItem('pkce_code_verifier')).toEqual(null);

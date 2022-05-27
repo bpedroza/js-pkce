@@ -168,6 +168,6 @@ export default class PKCE {
    * @return {Storage}
    */
   private getStore(): Storage {
-    return globalThis[this.config?.storage_type || 'sessionStorage'];
+    return this.config?.storage || sessionStorage
   }
 }

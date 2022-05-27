@@ -72,6 +72,6 @@ In this case it you can opt in to use `localStorage` instead of `sessionStorage`
 import PKCE from 'js-pkce';
 const pkce = new PKCE({
   // ...
-  storage_type: 'localStorage', // sessionStorage (default) or localStorage 
+  storage: localStorage, // any Storage object, sessionStorage (default) or localStorage 
 });
 ```
