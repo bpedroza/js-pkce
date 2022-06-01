@@ -95,7 +95,7 @@ export default class PKCE {
     const stateKey = 'pkce_state';
 
     if (explicit !== null) {
-      sessionStorage.setItem(stateKey, explicit);
+      this.getStore().setItem(stateKey, explicit);
     }
 
     if (this.state === '') {
@@ -136,12 +136,12 @@ export default class PKCE {
    * @return {string}
    */
   private randomStringFromStorage(key: string): string {
-    const fromStorage = sessionStorage.getItem(key);
+    const fromStorage = this.getStore().getItem(key);
     if (fromStorage === null) {
-      sessionStorage.setItem(key, WordArray.random(64));
+      this.getStore().setItem(key, WordArray.random(64));
     }
 
-    return sessionStorage.getItem(key) || '';
+    return this.getStore().getItem(key) || '';
   }
 
   /**
@@ -161,5 +161,13 @@ export default class PKCE {
 
       return resolve(queryParams);
     });
+  }
+
+  /**
+   * Get the storage (sessionStorage / localStorage) to use, defaults to sessionStorage
+   * @return {Storage}
+   */
+  private getStore(): Storage {
+    return this.config?.storage || sessionStorage
   }
 }
