@@ -25,18 +25,20 @@ export default class PKCE {
    * @return Promise<string>
    */
   public authorizeUrl(additionalParams: IObject = {}): string {
-    const codeChallenge = this.pkceChallengeFromVerifier();
-
     const queryString = new URLSearchParams(
       Object.assign(
         {
-          response_type: 'code',
+          response_type: this.config?.implicit ? 'token' : 'code',
           client_id: this.config.client_id,
           state: this.getState(additionalParams.state || null),
           scope: this.config.requested_scopes,
           redirect_uri: this.config.redirect_uri,
-          code_challenge: codeChallenge,
-          code_challenge_method: 'S256',
+          ...(this.config?.implicit
+            ? {}
+            : {
+                code_challenge: this.pkceChallengeFromVerifier(),
+                code_challenge_method: 'S256',
+              }),
         },
         additionalParams,
       ),
@@ -53,6 +55,26 @@ export default class PKCE {
    */
   public exchangeForAccessToken(url: string, additionalParams: IObject = {}): Promise<ITokenResponse> {
     return this.parseAuthResponseUrl(url).then((q) => {
+      if (this.config?.implicit) {
+        const tokenResponse = {
+          access_token: '',
+          expires_in: 0,
+          refresh_expires_in: 0,
+          refresh_token: '',
+          scope: '',
+          token_type: '',
+        };
+        const urlParams = new URL(url).searchParams;
+        urlParams.forEach((val, key) => {
+          if (Object.keys(tokenResponse).indexOf(key) > -1) {
+            tokenResponse[key] = typeof tokenResponse[key] === 'number' ? Number(val) : String(val);
+          }
+        });
+
+        return Promise.resolve(Object.assign(tokenResponse, additionalParams));
+      }
+
+      // Regular PKCE, not implicit
       return fetch(this.config.token_endpoint, {
         method: 'POST',
         body: new URLSearchParams(
@@ -62,7 +84,11 @@ export default class PKCE {
               code: q.code,
               client_id: this.config.client_id,
               redirect_uri: this.config.redirect_uri,
-              code_verifier: this.getCodeVerifier(),
+              ...(this.config?.implicit
+                ? {}
+                : {
+                    code_verifier: this.getCodeVerifier(),
+                  }),
             },
             additionalParams,
           ),
@@ -155,7 +181,7 @@ export default class PKCE {
         return reject({ error: queryParams.error });
       }
 
-      if (queryParams.state !== this.getState()) {
+      if (queryParams.state !== this.getState() && !this.config?.implicit) {
         return reject({ error: 'Invalid State' });
       }
 

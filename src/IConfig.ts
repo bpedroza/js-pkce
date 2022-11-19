@@ -5,4 +5,5 @@ export default interface IConfig {
   token_endpoint: string;
   requested_scopes: string;
   storage?: Storage;
+  implicit?: boolean;
 }
