@@ -18,7 +18,9 @@
     "prepublishOnly": "npm test && npm run lint",
     "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "browserify": "npm run build; browserify --standalone PKCE -r ./dist/PKCE.js:PKCE |sed 's/\\(exports.default = PKCE;\\)/\\1 module.exports = PKCE;/g' > dist/browser.js && npm run minify",
+    "minify": "cat dist/browser.js | terser --compress --mangle > dist/browser.min.js"
   },
   "keywords": [
     "oauth",
@@ -30,10 +32,12 @@
   "devDependencies": {
     "@types/crypto-js": "^3.1.47",
     "@types/jest": "^25.2.3",
+    "browserify": "^17.0.0",
     "jest": "^26.4.2",
     "jest-fetch-mock": "^3.0.3",
     "jest-localstorage-mock": "^2.4.3",
     "prettier": "^2.1.2",
+    "terser": "^5.15.1",
     "ts-jest": "^26.3.0",
     "tslint": "^6.1.3",
     "tslint-config-prettier": "^1.18.0",
