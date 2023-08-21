@@ -76,6 +76,26 @@ export default class PKCE {
   }
 
   /**
+   * Log out for a given access token
+   * @param accessToken
+   * @param {object} additionalParams include additional parameters in the query
+   * @return {Promise<Response>}
+   */
+  public logout(accessToken, additionalParams: IObject = {}): Promise<Response> {
+
+    return fetch(`${this.config.logout_endpoint}?` + new URLSearchParams(
+        Object.assign(
+            {
+              client_id: this.config.client_id,
+              token: `${accessToken}`
+            },
+            additionalParams,
+        ),
+    ), {
+      method: 'GET',
+    }).then((response) => response.json());
+  }
+  /**
    * Get the current codeVerifier or generate a new one
    * @return {string}
    */
