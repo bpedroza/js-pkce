@@ -6,6 +6,7 @@ const config = {
   redirect_uri: 'http://localhost:8080/',
   authorization_endpoint: 'https://example.com/auth',
   token_endpoint: 'https://example.com/token',
+  validation_endpoint: 'https://example.com/validation',
   requested_scopes: '*',
 };
 
@@ -134,6 +135,39 @@ describe('Test PKCE exchange code for token', () => {
 
     await instance.exchangeForAccessToken(url, additionalParams);
   }
+});
+
+describe('Test PKCE token validation', () => {
+  const accessToken = 'token';
+
+  it('Should make a request to validation endpoint', async () => {
+    await mockRequest();
+
+    expect(fetch.mock.calls.length).toEqual(1);
+    expect(fetch.mock.calls[0][0]).toContain(config.validation_endpoint);
+    expect(fetch.mock.calls[0][0]).toContain('?client_id=' + config.client_id);
+  });
+
+  it('Should request with authorization header', async () => {
+    await mockRequest();
+    const headers = fetch.mock.calls[0][1].headers;
+
+    expect(headers['Authorization']).toEqual(accessToken);
+  });
+
+  async function mockRequest(additionalParams: object = {}) {
+    const instance = new PKCE(config);
+
+    const mockSuccessResponse = {
+      access_token: accessToken
+    };
+
+    fetch.resetMocks();
+    fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
+
+    await instance.validateAccessToken(accessToken, additionalParams);
+  }
+
 });
 
 describe('Test storage types', () => {

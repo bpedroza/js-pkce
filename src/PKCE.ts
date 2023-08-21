@@ -5,6 +5,7 @@ import IAuthResponse from './IAuthResponse';
 import IConfig from './IConfig';
 import IObject from './IObject';
 import ITokenResponse from './ITokenResponse';
+import IValidationResponse from "./IValidationResponse";
 
 export default class PKCE {
   private config: IConfig;
@@ -46,8 +47,30 @@ export default class PKCE {
   }
 
   /**
+   * Validate the given user access token
+   * @param accessToken current access token
+   * @param {object} additionalParams include additional parameters in the query
+   * @return {Promise<IValidationResponse>}
+   */
+  public validateAccessToken(accessToken, additionalParams: IObject = {}): Promise<IValidationResponse> {
+    return fetch(`${this.config.validation_endpoint}?` + new URLSearchParams(
+        Object.assign(
+          {
+            client_id: this.config.client_id
+          },
+          additionalParams,
+        ),
+      ), {
+      method: 'GET',
+      headers: {
+        Authorization: `${accessToken}`,
+      },
+    }).then((response) => response.json());
+  }
+
+  /**
    * Given the return url, get a token from the oauth server
-   * @param  url current urlwith params from server
+   * @param  url current url with params from server
    * @param  {object} additionalParams include additional parameters in the request body
    * @return {Promise<ITokenResponse>}
    */
@@ -106,7 +129,7 @@ export default class PKCE {
   }
 
   /**
-   * Get the query params as json from a auth response url
+   * Get the query params as json from an auth response url
    * @param  {string} url a url expected to have AuthResponse params
    * @return {Promise<IAuthResponse>}
    */
@@ -146,7 +169,7 @@ export default class PKCE {
 
   /**
    * Validates params from auth response
-   * @param  {AuthResponse} queryParams
+   * @param  {IAuthResponse} queryParams
    * @return {Promise<IAuthResponse>}
    */
   private validateAuthResponse(queryParams: IAuthResponse): Promise<IAuthResponse> {
