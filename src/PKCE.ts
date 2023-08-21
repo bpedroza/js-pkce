@@ -45,35 +45,35 @@ export default class PKCE {
     return `${this.config.authorization_endpoint}?${queryString}`;
   }
 
-    /**
+  /**
    * Given the return url, get a token from the oauth server
    * @param  url current urlwith params from server
    * @param  {object} additionalParams include additional parameters in the request body
    * @return {Promise<ITokenResponse>}
    */
-    public exchangeForAccessToken(url: string, additionalParams: IObject = {}): Promise<ITokenResponse> {
-      return this.parseAuthResponseUrl(url).then((q) => {
-        return fetch(this.config.token_endpoint, {
-          method: 'POST',
-          body: new URLSearchParams(
-            Object.assign(
-              {
-                grant_type: 'authorization_code',
-                code: q.code,
-                client_id: this.config.client_id,
-                redirect_uri: this.config.redirect_uri,
-                code_verifier: this.getCodeVerifier(),
-              },
-              additionalParams,
-            ),
+  public exchangeForAccessToken(url: string, additionalParams: IObject = {}): Promise<ITokenResponse> {
+    return this.parseAuthResponseUrl(url).then((q) => {
+      return fetch(this.config.token_endpoint, {
+        method: 'POST',
+        body: new URLSearchParams(
+          Object.assign(
+            {
+              grant_type: 'authorization_code',
+              code: q.code,
+              client_id: this.config.client_id,
+              redirect_uri: this.config.redirect_uri,
+              code_verifier: this.getCodeVerifier(),
+            },
+            additionalParams,
           ),
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-          },
-        }).then((response) => response.json());
-      });
-    }
+        ),
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+      }).then((response) => response.json());
+    });
+  }
 
   /**
    * Given the return url, get a token from the oauth server
