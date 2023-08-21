@@ -136,6 +136,58 @@ describe('Test PKCE exchange code for token', () => {
   }
 });
 
+describe('Test PCKE refresh token', () => {
+  const accessToken = 'ACCESS_TOKEN';
+  const refreshToken = 'REFRESH_TOKEN';
+
+  it('Should make a request to token endpoint', async () => {
+    await mockRequest();
+
+    expect(fetch.mock.calls.length).toEqual(1);
+    expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint);
+  });
+
+  it('Should request with headers', async () => {
+    await mockRequest();
+    const headers = fetch.mock.calls[0][1].headers;
+
+    expect(headers['Accept']).toEqual('application/json');
+    expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
+  });
+
+  it('Should request with body', async () => {
+    await mockRequest();
+    const body = new URLSearchParams(fetch.mock.calls[0][1].body.toString());
+
+    expect(body.get('grant_type')).toEqual('refresh_token');
+    expect(body.get('client_id')).toEqual(config.client_id);
+    expect(body.get('access_token')).toEqual(accessToken);
+    expect(body.get('refresh_token')).toEqual(refreshToken);
+  });  
+
+  async function mockRequest() {
+    sessionStorage.setItem('pkce_state', 'teststate');
+    const instance = new PKCE(config);
+
+    const mockSuccessResponse = {
+      access_token: 'token',
+      expires_in: 123,
+      refresh_expires_in: 234,
+      refresh_token: 'refresh',
+      scope: '*',
+      token_type: 'type',
+    };
+
+    fetch.resetMocks();
+    fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
+
+    sessionStorage.removeItem('pkce_code_verifier');
+
+    await instance.refreshAccessToken(accessToken, refreshToken);
+  }  
+});
+
+
 describe('Test storage types', () => {
   it('Should default to sessionStorage, localStorage emtpy', async () => {
     sessionStorage.removeItem('pkce_code_verifier');
