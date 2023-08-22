@@ -76,7 +76,7 @@ export default class PKCE {
   }
 
   /**
-   * Given the return url, get a token from the oauth server
+   * Given an access and refresh token, return a new token from the oauth server
    * @param  accessToken current access token from server
    * @param  refreshTokens current refresh token from server
    * @return {Promise<ITokenResponse>}
