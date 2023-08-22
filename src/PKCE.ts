@@ -76,29 +76,25 @@ export default class PKCE {
   }
 
   /**
-   * Given an access and refresh token, return a new token from the oauth server
-   * @param  accessToken current access token from server
+   * Given a refresh token, return a new token from the oauth server
    * @param  refreshTokens current refresh token from server
    * @return {Promise<ITokenResponse>}
    */
-  public refreshAccessToken(accessToken: string, refreshToken: string): Promise<ITokenResponse> {
+  public refreshAccessToken(refreshToken: string): Promise<ITokenResponse> {
     return fetch(this.config.token_endpoint, {
       method: 'POST',
-      body: new URLSearchParams(
-        {
-          grant_type: 'refresh_token',
-          client_id: this.config.client_id,
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        },
-      ),
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: this.config.client_id,
+        refresh_token: refreshToken,
+      }),
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
     }).then((response) => response.json());
   }
-  
+
   /**
    * Get the current codeVerifier or generate a new one
    * @return {string}

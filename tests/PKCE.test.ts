@@ -137,7 +137,6 @@ describe('Test PKCE exchange code for token', () => {
 });
 
 describe('Test PCKE refresh token', () => {
-  const accessToken = 'ACCESS_TOKEN';
   const refreshToken = 'REFRESH_TOKEN';
 
   it('Should make a request to token endpoint', async () => {
@@ -161,12 +160,10 @@ describe('Test PCKE refresh token', () => {
 
     expect(body.get('grant_type')).toEqual('refresh_token');
     expect(body.get('client_id')).toEqual(config.client_id);
-    expect(body.get('access_token')).toEqual(accessToken);
     expect(body.get('refresh_token')).toEqual(refreshToken);
   });  
 
   async function mockRequest() {
-    sessionStorage.setItem('pkce_state', 'teststate');
     const instance = new PKCE(config);
 
     const mockSuccessResponse = {
@@ -181,9 +178,7 @@ describe('Test PCKE refresh token', () => {
     fetch.resetMocks();
     fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
 
-    sessionStorage.removeItem('pkce_code_verifier');
-
-    await instance.refreshAccessToken(accessToken, refreshToken);
+    await instance.refreshAccessToken(refreshToken);
   }  
 });
 

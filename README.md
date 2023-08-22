@@ -62,10 +62,10 @@ pkce.exchangeForAccessToken(url, additionalParams).then((resp) => {
 ```
 
 ## Refreshing the token
-Some servers require you to refresh your access token periodically.
+Get a new access token using a refresh token
 
 ```javascript
-pkce.refreshAccessToken(accessToken, refreshToken).then((resp) => {
+pkce.refreshAccessToken(refreshToken).then((resp) => {
   const accessToken = resp.access_token;
   const refreshToken = resp.refresh_token;
   // Do stuff with the access & refresh token.
