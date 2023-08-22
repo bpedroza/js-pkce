@@ -61,6 +61,17 @@ pkce.exchangeForAccessToken(url, additionalParams).then((resp) => {
 });
 ```
 
+## Refreshing the token
+Some servers require you to refresh your access token periodically.
+
+```javascript
+pkce.refreshAccessToken(accessToken, refreshToken).then((resp) => {
+  const accessToken = resp.access_token;
+  const refreshToken = resp.refresh_token;
+  // Do stuff with the access & refresh token.
+});
+```
+
 ## A note on Storage
 By default, this package will use `sessionStorage` to persist the `pkce_state`. On (mostly) mobile
 devices there's a higher chance users are returning in a different browser tab. E.g. they kick off
