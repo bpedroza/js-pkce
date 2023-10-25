@@ -21,7 +21,11 @@ export default class PKCE {
     this.config = config;
   }
 
-
+  /**
+   * Additional options required for CORS on the fetch object.
+   * @param  {ICorsOptions} options include additional options for cors support
+   * @return Promise<IObject>
+   */
   public additionalCorsOptions(options: ICorsOptions): IObject {
     this.corsRequestOptions = {
       ...options,
@@ -29,6 +33,7 @@ export default class PKCE {
     }
     return this.corsRequestOptions
   }
+
   /**
    * Generate the authorize url
    * @param  {object} additionalParams include additional parameters in the query
