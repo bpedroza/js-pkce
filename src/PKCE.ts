@@ -5,11 +5,13 @@ import IAuthResponse from './IAuthResponse';
 import IConfig from './IConfig';
 import IObject from './IObject';
 import ITokenResponse from './ITokenResponse';
+import ICorsOptions from './ICorsOptions';
 
 export default class PKCE {
   private config: IConfig;
   private state: string = '';
   private codeVerifier: string = '';
+  private corsRequestOptions:IObject = {};
 
   /**
    * Initialize the instance with configuration
@@ -19,6 +21,14 @@ export default class PKCE {
     this.config = config;
   }
 
+
+  public additionalCorsOptions(options: ICorsOptions): IObject {
+    this.corsRequestOptions = {
+      ...options,
+      ...this.corsRequestOptions
+    }
+    return this.corsRequestOptions
+  }
   /**
    * Generate the authorize url
    * @param  {object} additionalParams include additional parameters in the query
@@ -71,6 +81,7 @@ export default class PKCE {
           Accept: 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
+        ...this.corsRequestOptions
       }).then((response) => response.json());
     });
   }

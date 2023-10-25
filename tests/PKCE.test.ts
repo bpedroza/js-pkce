@@ -161,7 +161,19 @@ describe('Test PCKE refresh token', () => {
     expect(body.get('grant_type')).toEqual('refresh_token');
     expect(body.get('client_id')).toEqual(config.client_id);
     expect(body.get('refresh_token')).toEqual(refreshToken);
-  });  
+  });
+
+
+  it('Should have set the cors options correctly', async () => {
+    const instance = new PKCE(config);
+    const opts = instance.additionalCorsOptions({
+      credentials: 'include',
+      mode: 'cors'
+    })
+    expect(opts.credentials).toEqual('include')
+    expect(opts.mode).toEqual('cors')
+  });
+
 
   async function mockRequest() {
     const instance = new PKCE(config);
@@ -179,7 +191,7 @@ describe('Test PCKE refresh token', () => {
     fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
 
     await instance.refreshAccessToken(refreshToken);
-  }  
+  }
 });
 
 
@@ -192,7 +204,7 @@ describe('Test storage types', () => {
     instance.authorizeUrl();
 
     expect(sessionStorage.getItem('pkce_code_verifier')).not.toEqual(null);
-    expect(localStorage.getItem('pkce_code_verifier')).toEqual(null);    
+    expect(localStorage.getItem('pkce_code_verifier')).toEqual(null);
   });
 
   it('Should allow for using localStorage, sessionStorage emtpy', async () => {
