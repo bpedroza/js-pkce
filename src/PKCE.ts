@@ -11,7 +11,7 @@ export default class PKCE {
   private config: IConfig;
   private state: string = '';
   private codeVerifier: string = '';
-  private corsRequestOptions:IObject = {};
+  private corsRequestOptions:ICorsOptions = {};
 
   /**
    * Initialize the instance with configuration
@@ -26,11 +26,12 @@ export default class PKCE {
    * @param  {ICorsOptions} options include additional options for cors support
    * @return Promise<IObject>
    */
-  public additionalCorsOptions(options: ICorsOptions): IObject {
-    this.corsRequestOptions = {
-      ...options,
-      ...this.corsRequestOptions
-    }
+  public enableCorsCredentials(enable: boolean): IObject {
+
+    this.corsRequestOptions = (enable) ? {
+      credentials: 'include',
+      mode: 'cors'
+    } : {}
     return this.corsRequestOptions
   }
 

@@ -164,17 +164,6 @@ describe('Test PCKE refresh token', () => {
   });
 
 
-  it('Should have set the cors options correctly', async () => {
-    const instance = new PKCE(config);
-    const opts = instance.additionalCorsOptions({
-      credentials: 'include',
-      mode: 'cors'
-    })
-    expect(opts.credentials).toEqual('include')
-    expect(opts.mode).toEqual('cors')
-  });
-
-
   async function mockRequest() {
     const instance = new PKCE(config);
 
@@ -216,5 +205,19 @@ describe('Test storage types', () => {
 
     expect(sessionStorage.getItem('pkce_code_verifier')).toEqual(null);
     expect(localStorage.getItem('pkce_code_verifier')).not.toEqual(null);
+  });
+});
+
+describe('Test additional cors options', () => {
+  it('Should have set the cors options correctly', async () => {
+    const instance = new PKCE(config);
+    const opts = instance.enableCorsCredentials(true)
+    expect(opts.credentials).toEqual('include')
+    expect(opts.mode).toEqual('cors')
+
+    // unset cors options
+    const newOpts = instance.enableCorsCredentials(false)
+    expect(newOpts.credentials).toBe(undefined)
+    expect(newOpts.mode).toBe(undefined)
   });
 });
