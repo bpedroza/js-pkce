@@ -22,11 +22,11 @@ export default class PKCE {
   }
 
   /**
-   * Additional options required for CORS on the fetch object.
-   * @param  {ICorsOptions} options include additional options for cors support
-   * @return Promise<IObject>
+   * Allow the user to enable cross domain cors requests
+   * @param  enable turn the cross domain request options on.
+   * @return Promise<ICorsOptions>
    */
-  public enableCorsCredentials(enable: boolean): IObject {
+  public enableCorsCredentials(enable: boolean): ICorsOptions {
 
     this.corsRequestOptions = (enable) ? {
       credentials: 'include',
