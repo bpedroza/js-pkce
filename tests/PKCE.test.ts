@@ -113,10 +113,26 @@ describe('Test PKCE exchange code for token', () => {
     expect(body.get('test_param')).toEqual('testing');
   });
 
-  async function mockRequest(additionalParams: object = {}) {
+  it('Should have set the cors credentials options correctly', async () => {
+    // enable cors credentials
+    await mockRequest({}, true)
+    expect(fetch.mock.calls[0][1]?.mode).toEqual('cors')
+    expect(fetch.mock.calls[0][1]?.credentials).toEqual('include')
+  })
+
+  it('Should _not_ have cors credentials options set', async () => {
+    // enable cors credentials
+    await mockRequest({}, false)
+    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined()
+    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined()
+  })
+
+  async function mockRequest(additionalParams: object = {}, enableCorsCredentials = false) {
     sessionStorage.setItem('pkce_state', 'teststate');
     const url = 'https://example.com?state=teststate&code=123';
     const instance = new PKCE(config);
+
+    instance.enableCorsCredentials(enableCorsCredentials)
 
     const mockSuccessResponse = {
       access_token: 'token',
@@ -205,19 +221,5 @@ describe('Test storage types', () => {
 
     expect(sessionStorage.getItem('pkce_code_verifier')).toEqual(null);
     expect(localStorage.getItem('pkce_code_verifier')).not.toEqual(null);
-  });
-});
-
-describe('Test additional cors options', () => {
-  it('Should have set the cors options correctly', async () => {
-    const instance = new PKCE(config);
-    const opts = instance.enableCorsCredentials(true)
-    expect(opts.credentials).toEqual('include')
-    expect(opts.mode).toEqual('cors')
-
-    // unset cors options
-    const newOpts = instance.enableCorsCredentials(false)
-    expect(newOpts.credentials).toBe(undefined)
-    expect(newOpts.mode).toBe(undefined)
   });
 });

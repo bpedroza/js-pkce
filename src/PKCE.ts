@@ -24,7 +24,7 @@ export default class PKCE {
   /**
    * Allow the user to enable cross domain cors requests
    * @param  enable turn the cross domain request options on.
-   * @return Promise<ICorsOptions>
+   * @return ICorsOptions
    */
   public enableCorsCredentials(enable: boolean): ICorsOptions {
 
