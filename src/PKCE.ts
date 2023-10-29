@@ -11,7 +11,7 @@ export default class PKCE {
   private config: IConfig;
   private state: string = '';
   private codeVerifier: string = '';
-  private corsRequestOptions:ICorsOptions = {};
+  private corsRequestOptions: ICorsOptions = {};
 
   /**
    * Initialize the instance with configuration
@@ -27,12 +27,13 @@ export default class PKCE {
    * @return ICorsOptions
    */
   public enableCorsCredentials(enable: boolean): ICorsOptions {
-
-    this.corsRequestOptions = (enable) ? {
-      credentials: 'include',
-      mode: 'cors'
-    } : {}
-    return this.corsRequestOptions
+    this.corsRequestOptions = enable
+      ? {
+          credentials: 'include',
+          mode: 'cors',
+        }
+      : {};
+    return this.corsRequestOptions;
   }
 
   /**
@@ -87,7 +88,7 @@ export default class PKCE {
           Accept: 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
-        ...this.corsRequestOptions
+        ...this.corsRequestOptions,
       }).then((response) => response.json());
     });
   }

@@ -86,3 +86,11 @@ const pkce = new PKCE({
   storage: localStorage, // any Storage object, sessionStorage (default) or localStorage 
 });
 ```
+
+## Cors credentials
+When using httpOnly cookies, there is some additional configuration required. The method 
+`enableCorsCredentials` can be called to allow sending credentials.
+
+```javascript
+pkce.enableCorsCredentials(true);
+```
