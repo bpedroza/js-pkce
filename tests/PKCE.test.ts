@@ -113,10 +113,26 @@ describe('Test PKCE exchange code for token', () => {
     expect(body.get('test_param')).toEqual('testing');
   });
 
-  async function mockRequest(additionalParams: object = {}) {
+  it('Should have set the cors credentials options correctly', async () => {
+    // enable cors credentials
+    await mockRequest({}, true)
+    expect(fetch.mock.calls[0][1]?.mode).toEqual('cors')
+    expect(fetch.mock.calls[0][1]?.credentials).toEqual('include')
+  })
+
+  it('Should _not_ have cors credentials options set', async () => {
+    // enable cors credentials
+    await mockRequest({}, false)
+    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined()
+    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined()
+  })
+
+  async function mockRequest(additionalParams: object = {}, enableCorsCredentials = false) {
     sessionStorage.setItem('pkce_state', 'teststate');
     const url = 'https://example.com?state=teststate&code=123';
     const instance = new PKCE(config);
+
+    instance.enableCorsCredentials(enableCorsCredentials)
 
     const mockSuccessResponse = {
       access_token: 'token',
@@ -161,7 +177,8 @@ describe('Test PCKE refresh token', () => {
     expect(body.get('grant_type')).toEqual('refresh_token');
     expect(body.get('client_id')).toEqual(config.client_id);
     expect(body.get('refresh_token')).toEqual(refreshToken);
-  });  
+  });
+
 
   async function mockRequest() {
     const instance = new PKCE(config);
@@ -179,7 +196,7 @@ describe('Test PCKE refresh token', () => {
     fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
 
     await instance.refreshAccessToken(refreshToken);
-  }  
+  }
 });
 
 
@@ -192,7 +209,7 @@ describe('Test storage types', () => {
     instance.authorizeUrl();
 
     expect(sessionStorage.getItem('pkce_code_verifier')).not.toEqual(null);
-    expect(localStorage.getItem('pkce_code_verifier')).toEqual(null);    
+    expect(localStorage.getItem('pkce_code_verifier')).toEqual(null);
   });
 
   it('Should allow for using localStorage, sessionStorage emtpy', async () => {

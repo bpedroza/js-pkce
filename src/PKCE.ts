@@ -5,11 +5,13 @@ import IAuthResponse from './IAuthResponse';
 import IConfig from './IConfig';
 import IObject from './IObject';
 import ITokenResponse from './ITokenResponse';
+import ICorsOptions from './ICorsOptions';
 
 export default class PKCE {
   private config: IConfig;
   private state: string = '';
   private codeVerifier: string = '';
+  private corsRequestOptions:ICorsOptions = {};
 
   /**
    * Initialize the instance with configuration
@@ -17,6 +19,20 @@ export default class PKCE {
    */
   constructor(config: IConfig) {
     this.config = config;
+  }
+
+  /**
+   * Allow the user to enable cross domain cors requests
+   * @param  enable turn the cross domain request options on.
+   * @return ICorsOptions
+   */
+  public enableCorsCredentials(enable: boolean): ICorsOptions {
+
+    this.corsRequestOptions = (enable) ? {
+      credentials: 'include',
+      mode: 'cors'
+    } : {}
+    return this.corsRequestOptions
   }
 
   /**
@@ -71,6 +87,7 @@ export default class PKCE {
           Accept: 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
+        ...this.corsRequestOptions
       }).then((response) => response.json());
     });
   }
