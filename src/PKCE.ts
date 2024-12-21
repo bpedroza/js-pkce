@@ -89,10 +89,7 @@ export default class PKCE {
           'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
         ...this.corsRequestOptions,
-      }).then((response) => {
-        this.clearStorageData();
-        return response.json();
-      });
+      }).then((response) => response.json());
     });
   }
 
@@ -144,11 +141,6 @@ export default class PKCE {
     if (url.protocol !== 'https:' && !isLocalHost) {
       throw new Error(`Protocol ${url.protocol} not allowed with this action.`);
     }
-  }
-
-  private clearStorageData(): void {
-    this.getStore().removeItem('pkce_code_verifier');
-    this.getStore().removeItem('pkce_state');
   }
 
   /**
