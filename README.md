@@ -14,7 +14,9 @@ const pkce = new PKCE({
   redirect_uri: 'http://localhost:8080/auth',
   authorization_endpoint: 'https://authserver.com/oauth/authorize',
   token_endpoint: 'https://authserver.com/oauth/token',
+  revoke_endpoint: 'https://authserver.com/oauth/revoke', // optional
   requested_scopes: '*',
+  storage: sessionStorage // optional
 });
 ```
 
@@ -72,6 +74,24 @@ pkce.refreshAccessToken(refreshToken).then((resp) => {
 });
 ```
 
+## Revoking a token
+Revoke a token. Note that the specification for this functionality in the context of PKCE
+is not very well defined. This may not work for all authorization servers.
+
+You may optionally pass a `token_type_hint` as the second parameter.
+
+```javascript
+pkce.revokeToken(tokenToExpire, 'access_token')
+```
+
+## Cors credentials
+When using httpOnly cookies, there is some additional configuration required. The method 
+`enableCorsCredentials` can be called to allow sending credentials.
+
+```javascript
+pkce.enableCorsCredentials(true);
+```
+
 ## A note on Storage
 By default, this package will use `sessionStorage` to persist the `pkce_state`. On (mostly) mobile
 devices there's a higher chance users are returning in a different browser tab. E.g. they kick off
@@ -85,12 +105,4 @@ const pkce = new PKCE({
   // ...
   storage: localStorage, // any Storage object, sessionStorage (default) or localStorage 
 });
-```
-
-## Cors credentials
-When using httpOnly cookies, there is some additional configuration required. The method 
-`enableCorsCredentials` can be called to allow sending credentials.
-
-```javascript
-pkce.enableCorsCredentials(true);
 ```
