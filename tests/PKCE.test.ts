@@ -1,5 +1,6 @@
 import PKCE from '../src/PKCE';
 import fetch from 'jest-fetch-mock';
+import ITokenResponse from '../src/ITokenResponse';
 
 const config = {
   client_id: '42',
@@ -80,15 +81,9 @@ describe('Test PKCE exchange code for token', () => {
     expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint);
   });
 
-  it('Should set code verifier', async () => {
-    await mockRequest();
-
-    expect(sessionStorage.getItem('pkce_code_verifier')).not.toEqual(null);
-  });
-
   it('Should request with headers', async () => {
     await mockRequest();
-    const headers = fetch.mock.calls[0][1].headers;
+    const headers = fetch.mock.calls[0][1]?.headers ?? [];
 
     expect(headers['Accept']).toEqual('application/json');
     expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
@@ -96,7 +91,7 @@ describe('Test PKCE exchange code for token', () => {
 
   it('Should request with body', async () => {
     await mockRequest();
-    const body = new URLSearchParams(fetch.mock.calls[0][1].body.toString());
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
 
     expect(body.get('grant_type')).toEqual('authorization_code');
     expect(body.get('code')).toEqual('123');
@@ -107,7 +102,7 @@ describe('Test PKCE exchange code for token', () => {
 
   it('Should request with additional parameters', async () => {
     await mockRequest({test_param: 'testing'});
-    const body = new URLSearchParams(fetch.mock.calls[0][1].body.toString());
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
 
     expect(body.get('grant_type')).toEqual('authorization_code');
     expect(body.get('test_param')).toEqual('testing');
@@ -116,23 +111,42 @@ describe('Test PKCE exchange code for token', () => {
   it('Should have set the cors credentials options correctly', async () => {
     // enable cors credentials
     await mockRequest({}, true)
-    expect(fetch.mock.calls[0][1]?.mode).toEqual('cors')
-    expect(fetch.mock.calls[0][1]?.credentials).toEqual('include')
-  })
+    expect(fetch.mock.calls[0][1]?.mode).toEqual('cors');
+    expect(fetch.mock.calls[0][1]?.credentials).toEqual('include');
+  });
 
-  it('Should _not_ have cors credentials options set', async () => {
-    // enable cors credentials
+  it('Should not have cors credentials options set', async () => {
+    // disable cors credentials
     await mockRequest({}, false)
-    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined()
-    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined()
-  })
+    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined();
+    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined();
+  });
 
-  async function mockRequest(additionalParams: object = {}, enableCorsCredentials = false) {
+  it('Should not have cors credentials options set when not specified', async () => {
+    await mockRequest({}, null)
+    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined();
+    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined();
+  });
+
+  it('Should return token', async () => {
+    const result = await mockRequest({});
+    expect(result.access_token).toEqual('token');
+  });
+
+  /* @TODO breaking change - implement in v2.0 it('Should clear storage after token exchange', async () => {
+    await mockRequest({}, false);
+    expect(sessionStorage.getItem('pkce_code_verifier')).toEqual(null);
+    expect(sessionStorage.getItem('pkce_state')).toEqual(null);
+  }); */ 
+
+  async function mockRequest(additionalParams: object = {}, enableCorsCredentials: boolean|null = null): Promise<ITokenResponse> {
     sessionStorage.setItem('pkce_state', 'teststate');
     const url = 'https://example.com?state=teststate&code=123';
     const instance = new PKCE(config);
 
-    instance.enableCorsCredentials(enableCorsCredentials)
+    if(enableCorsCredentials !== null) {
+      instance.enableCorsCredentials(enableCorsCredentials);
+    } 
 
     const mockSuccessResponse = {
       access_token: 'token',
@@ -146,9 +160,7 @@ describe('Test PKCE exchange code for token', () => {
     fetch.resetMocks();
     fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
 
-    sessionStorage.removeItem('pkce_code_verifier');
-
-    await instance.exchangeForAccessToken(url, additionalParams);
+    return await instance.exchangeForAccessToken(url, additionalParams);
   }
 });
 
@@ -164,7 +176,7 @@ describe('Test PCKE refresh token', () => {
 
   it('Should request with headers', async () => {
     await mockRequest();
-    const headers = fetch.mock.calls[0][1].headers;
+    const headers = fetch.mock.calls[0][1]?.headers ?? [];
 
     expect(headers['Accept']).toEqual('application/json');
     expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
@@ -172,7 +184,7 @@ describe('Test PCKE refresh token', () => {
 
   it('Should request with body', async () => {
     await mockRequest();
-    const body = new URLSearchParams(fetch.mock.calls[0][1].body.toString());
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
 
     expect(body.get('grant_type')).toEqual('refresh_token');
     expect(body.get('client_id')).toEqual(config.client_id);
@@ -196,6 +208,82 @@ describe('Test PCKE refresh token', () => {
     fetch.mockResponseOnce(JSON.stringify(mockSuccessResponse))
 
     await instance.refreshAccessToken(refreshToken);
+  }
+});
+
+describe('Test PCKE revoke token', () => {
+  const tokenToExpire = 'A_TOKEN_TO_EXPIRE';
+
+  it('Should make a request to revoke token endpoint', async () => {
+    const url = 'https://example.com/revoke';
+    await mockRequest({revoke_endpoint: url});
+
+    expect(fetch.mock.calls.length).toEqual(1);
+    expect(fetch.mock.calls[0][0]).toEqual(url);
+  });
+
+  it('Should request with headers', async () => {
+    const url = 'https://example.com/revoke';
+    await mockRequest({revoke_endpoint: url});
+    const headers = fetch.mock.calls[0][1]?.headers ?? [];
+
+    expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
+  });
+
+  it('Should request with body', async () => {
+    const url = 'https://example.com/revoke';
+    await mockRequest({revoke_endpoint: url});
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
+
+    expect(body.get('token')).toEqual(tokenToExpire);
+    expect(body.get('client_id')).toEqual(config.client_id);
+    expect(body.get('token_type_hint')).toBeNull();
+  });
+
+  it('Should request with body including type hint', async () => {
+    const url = 'https://example.com/revoke';
+    const hint = 'refresh_token'
+    await mockRequest({revoke_endpoint: url}, hint);
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
+
+    expect(body.get('token')).toEqual(tokenToExpire);
+    expect(body.get('client_id')).toEqual(config.client_id);
+    expect(body.get('token_type_hint')).toEqual(hint);
+  });
+
+  it('Should throw an error when not https and not localhost', async () => {
+    expect.assertions(1);
+    const url = 'http://example.com/revoke';
+
+    try {
+      await mockRequest({revoke_endpoint: url});
+    } catch (e) {
+      expect(e.message).toEqual('Protocol http: not allowed with this action.');
+    }
+  });
+
+  it('Should not throw an error when not https and is localhost', async () => {
+    const url = 'http://localhost:8000/revoke';
+    await mockRequest({revoke_endpoint: url});
+
+    expect(fetch.mock.calls.length).toEqual(1);
+    expect(fetch.mock.calls[0][0]).toEqual(url);
+  });
+
+  async function mockRequest(configAddition: {revoke_endpoint: string}, hint: string = '') {
+    const instance = new PKCE({
+      ...config,
+      ...configAddition
+    });
+
+    fetch.resetMocks();
+    fetch.mockResponseOnce(JSON.stringify({}))
+
+    if(hint.length == 0) {
+      return await instance.revokeToken(tokenToExpire);
+    }
+    
+    await instance.revokeToken(tokenToExpire, hint);
   }
 });
 

@@ -3,6 +3,7 @@ export default interface IConfig {
   redirect_uri: string;
   authorization_endpoint: string;
   token_endpoint: string;
+  revoke_endpoint?: string;
   requested_scopes: string;
   storage?: Storage;
 }
