@@ -89,7 +89,10 @@ export default class PKCE {
           'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
         ...this.corsRequestOptions,
-      }).then((response) => response.json());
+      }).then((response) => {
+        this.clearStorageData();
+        return response.json();
+      });
     });
   }
 
@@ -111,6 +114,11 @@ export default class PKCE {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
     }).then((response) => response.json());
+  }
+
+  private clearStorageData(): void {
+    this.getStore().removeItem('pkce_code_verifier');
+    this.getStore().removeItem('pkce_state');
   }
 
   /**
