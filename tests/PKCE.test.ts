@@ -212,7 +212,6 @@ describe('Test PCKE refresh token', () => {
 });
 
 describe('Test PCKE revoke token', () => {
-  const accessToken = 'ACTIVE_ACCESS_TOKEN'
   const tokenToExpire = 'A_TOKEN_TO_EXPIRE';
 
   it('Should make a request to revoke token endpoint', async () => {
@@ -281,7 +280,7 @@ describe('Test PCKE revoke token', () => {
     fetch.mockResponseOnce(JSON.stringify({}))
 
     if(hint.length == 0) {
-      return await instance.revokeToken(accessToken, tokenToExpire);
+      return await instance.revokeToken(tokenToExpire);
     }
     
     await instance.revokeToken(tokenToExpire, hint);

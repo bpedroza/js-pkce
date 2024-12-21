@@ -120,9 +120,9 @@ export default class PKCE {
     this.checkEndpoint('revoke_endpoint');
     const params = new URLSearchParams({
       token: tokenToExpire,
-      client_id: this.config.client_id
+      client_id: this.config.client_id,
     });
-    if(hint.length) {
+    if (hint.length) {
       params.append('token_type_hint', hint);
     }
     return fetch(this.config.revoke_endpoint, {
@@ -134,15 +134,14 @@ export default class PKCE {
     }).then((response) => response.json());
   }
 
-  private checkEndpoint(propertyName: string)
-  {
-    if(!this.config.hasOwnProperty(propertyName)) {
-      throw new Error(`${propertyName} not configured.`)
+  private checkEndpoint(propertyName: string) {
+    if (!this.config.hasOwnProperty(propertyName)) {
+      throw new Error(`${propertyName} not configured.`);
     }
 
     const url = new URL(this.config[propertyName]);
     const isLocalHost = ['localhost', '127.0.0.1'].indexOf(url.hostname) !== -1;
-    if(url.protocol !== 'https:' && !isLocalHost) {
+    if (url.protocol !== 'https:' && !isLocalHost) {
       throw new Error(`Protocol ${url.protocol} not allowed with this action.`);
     }
   }
