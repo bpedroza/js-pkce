@@ -1,3 +1,5 @@
+![Build Status](https://github.com/bpedroza/js-pkce/actions/workflows/run-tests.yml/badge.svg)
+
 # js-pkce
 A package that makes using the OAuth2 PKCE flow easier
 
