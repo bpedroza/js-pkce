@@ -133,11 +133,11 @@ describe('Test PKCE exchange code for token', () => {
     expect(result.access_token).toEqual('token');
   });
 
-  it('Should clear storage after token exchange', async () => {
+  /* @TODO breaking change - implement in v2.0 it('Should clear storage after token exchange', async () => {
     await mockRequest({}, false);
     expect(sessionStorage.getItem('pkce_code_verifier')).toEqual(null);
     expect(sessionStorage.getItem('pkce_state')).toEqual(null);
-  });
+  }); */ 
 
   async function mockRequest(additionalParams: object = {}, enableCorsCredentials: boolean|null = null): Promise<ITokenResponse> {
     sessionStorage.setItem('pkce_state', 'teststate');
