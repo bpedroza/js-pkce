@@ -211,6 +211,83 @@ describe('Test PCKE refresh token', () => {
   }
 });
 
+describe('Test PCKE revoke token', () => {
+  const accessToken = 'ACTIVE_ACCESS_TOKEN'
+  const tokenToExpire = 'A_TOKEN_TO_EXPIRE';
+
+  it('Should make a request to revoke token endpoint', async () => {
+    const url = 'https://example.com/revoke';
+    await mockRequest({revoke_endpoint: url});
+
+    expect(fetch.mock.calls.length).toEqual(1);
+    expect(fetch.mock.calls[0][0]).toEqual(url);
+  });
+
+  it('Should request with headers', async () => {
+    const url = 'https://example.com/revoke';
+    await mockRequest({revoke_endpoint: url});
+    const headers = fetch.mock.calls[0][1]?.headers ?? [];
+
+    expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
+  });
+
+  it('Should request with body', async () => {
+    const url = 'https://example.com/revoke';
+    await mockRequest({revoke_endpoint: url});
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
+
+    expect(body.get('token')).toEqual(tokenToExpire);
+    expect(body.get('client_id')).toEqual(config.client_id);
+    expect(body.get('token_type_hint')).toBeNull();
+  });
+
+  it('Should request with body including type hint', async () => {
+    const url = 'https://example.com/revoke';
+    const hint = 'refresh_token'
+    await mockRequest({revoke_endpoint: url}, hint);
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
+
+    expect(body.get('token')).toEqual(tokenToExpire);
+    expect(body.get('client_id')).toEqual(config.client_id);
+    expect(body.get('token_type_hint')).toEqual(hint);
+  });
+
+  it('Should throw an error when not https and not localhost', async () => {
+    expect.assertions(1);
+    const url = 'http://example.com/revoke';
+
+    try {
+      await mockRequest({revoke_endpoint: url});
+    } catch (e) {
+      expect(e.message).toEqual('Protocol http: not allowed with this action.');
+    }
+  });
+
+  it('Should not throw an error when not https and is localhost', async () => {
+    const url = 'http://localhost:8000/revoke';
+    await mockRequest({revoke_endpoint: url});
+
+    expect(fetch.mock.calls.length).toEqual(1);
+    expect(fetch.mock.calls[0][0]).toEqual(url);
+  });
+
+  async function mockRequest(configAddition: {revoke_endpoint: string}, hint: string = '') {
+    const instance = new PKCE({
+      ...config,
+      ...configAddition
+    });
+
+    fetch.resetMocks();
+    fetch.mockResponseOnce(JSON.stringify({}))
+
+    if(hint.length == 0) {
+      return await instance.revokeToken(accessToken, tokenToExpire);
+    }
+    
+    await instance.revokeToken(tokenToExpire, hint);
+  }
+});
+
 
 describe('Test storage types', () => {
   it('Should default to sessionStorage, localStorage emtpy', async () => {

@@ -116,6 +116,37 @@ export default class PKCE {
     }).then((response) => response.json());
   }
 
+  public revokeToken(tokenToExpire: string, hint: string = '') {
+    this.checkEndpoint('revoke_endpoint');
+    const params = new URLSearchParams({
+      token: tokenToExpire,
+      client_id: this.config.client_id
+    });
+    if(hint.length) {
+      params.append('token_type_hint', hint);
+    }
+    return fetch(this.config.revoke_endpoint, {
+      method: 'POST',
+      body: params,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+    }).then((response) => response.json());
+  }
+
+  private checkEndpoint(propertyName: string)
+  {
+    if(!this.config.hasOwnProperty(propertyName)) {
+      throw new Error(`${propertyName} not configured.`)
+    }
+
+    const url = new URL(this.config[propertyName]);
+    const isLocalHost = ['localhost', '127.0.0.1'].indexOf(url.hostname) !== -1;
+    if(url.protocol !== 'https:' && !isLocalHost) {
+      throw new Error(`Protocol ${url.protocol} not allowed with this action.`);
+    }
+  }
+
   private clearStorageData(): void {
     this.getStore().removeItem('pkce_code_verifier');
     this.getStore().removeItem('pkce_state');
