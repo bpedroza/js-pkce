@@ -8,9 +8,10 @@ import ITokenResponse from './ITokenResponse';
 import ICorsOptions from './ICorsOptions';
 
 export default class PKCE {
+  private readonly STATE_KEY: string = 'pkce_state';
+  private readonly CODE_VERIFIER_KEY: string = 'pkce_code_verifier';
+
   private config: IConfig;
-  private state: string = '';
-  private codeVerifier: string = '';
   private corsRequestOptions: ICorsOptions = {};
 
   /**
@@ -42,12 +43,14 @@ export default class PKCE {
    * @return Promise<string>
    */
   public authorizeUrl(additionalParams: IObject = {}): string {
+    this.setCodeVerifier();
+    this.setState(additionalParams.state || null);
     const codeChallenge = this.pkceChallengeFromVerifier();
 
     const queryString = new URLSearchParams({
       response_type: 'code',
       client_id: this.config.client_id,
-      state: this.getState(additionalParams.state || null),
+      state: this.getState(),
       scope: this.config.requested_scopes,
       redirect_uri: this.config.redirect_uri,
       code_challenge: codeChallenge,
@@ -108,26 +111,69 @@ export default class PKCE {
     return await response.json();
   }
 
+  /**
+   * Revoke an existing token. 
+   * Optionally send a token_type_hint as second parameter
+   * @param {string} tokenToExpire the token to be expired
+   * @param {string} hint when not empty, token_type_hint will be sent with request
+   * @returns 
+   */
   public async revokeToken(tokenToExpire: string, hint: string = ''): Promise<boolean> {
     this.checkEndpoint('revoke_endpoint');
+
     const params = new URLSearchParams({
       token: tokenToExpire,
       client_id: this.config.client_id,
     });
+
     if (hint.length) {
       params.append('token_type_hint', hint);
     }
-    return fetch(this.config.revoke_endpoint, {
+
+    const response = await fetch(this.config.revoke_endpoint, {
       method: 'POST',
       body: params,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
-    })
-      .then((response) => response.ok)
-      .catch(() => false);
+    });
+
+    return response.ok;
   }
 
+  /**
+   * Get the current codeVerifier
+   * @return {string}
+   */
+  public getCodeVerifier(): string {
+    const codeVerifier = this.getStore().getItem(this.CODE_VERIFIER_KEY);
+
+    if(null === codeVerifier) {
+      throw new Error('Code Verifier not set.');
+    }
+
+    return codeVerifier;
+  }
+
+  /**
+   * Get the current state
+   * @return {string}
+   */
+  public getState(): string {
+    const state = this.getStore().getItem(this.STATE_KEY);
+
+    if(null === state) {
+      throw new Error('State not set.');
+    }
+
+    return state;
+  }
+
+  /**
+   * Check if an endpoint from configuration is set and using https protocol
+   * Allow http on localhost
+   * @param {string} propertyName the key of the item in configuration to check
+   */
   private checkEndpoint(propertyName: string) {
     if (!this.config.hasOwnProperty(propertyName)) {
       throw new Error(`${propertyName} not configured.`);
@@ -141,33 +187,11 @@ export default class PKCE {
   }
 
   /**
-   * Get the current codeVerifier or generate a new one
+   * Generate a random string
    * @return {string}
    */
-  private getCodeVerifier(): string {
-    if (this.codeVerifier === '') {
-      this.codeVerifier = this.randomStringFromStorage('pkce_code_verifier');
-    }
-
-    return this.codeVerifier;
-  }
-
-  /**
-   * Get the current state or generate a new one
-   * @return {string}
-   */
-  private getState(explicit: string = null): string {
-    const stateKey = 'pkce_state';
-
-    if (explicit !== null) {
-      this.getStore().setItem(stateKey, explicit);
-    }
-
-    if (this.state === '') {
-      this.state = this.randomStringFromStorage(stateKey);
-    }
-
-    return this.state;
+  private generateRandomString(): string {
+    return WordArray.random(64);
   }
 
   /**
@@ -196,17 +220,22 @@ export default class PKCE {
   }
 
   /**
-   * Get a random string from storage or store a new one and return it's value
-   * @param  {string} key
-   * @return {string}
+   * Set the code verifier in storage to a random string
+   * @return {void}
    */
-  private randomStringFromStorage(key: string): string {
-    const fromStorage = this.getStore().getItem(key);
-    if (fromStorage === null) {
-      this.getStore().setItem(key, WordArray.random(64));
-    }
+  private setCodeVerifier(): void {
+    this.getStore().setItem(this.CODE_VERIFIER_KEY, this.generateRandomString());
+  }
 
-    return this.getStore().getItem(key) || '';
+  /**
+   * Set the state in storage to a random string. 
+   * Optionally set an explicit state
+   * @param {string | null} explicit when set, we will use this value for the state value
+   * @return {void}
+   */
+  private setState(explicit: string | null = null): void {
+    const value = explicit !== null ? explicit : this.generateRandomString();
+    this.getStore().setItem(this.STATE_KEY, value);
   }
 
   /**
@@ -229,7 +258,8 @@ export default class PKCE {
   }
 
   /**
-   * Get the storage (sessionStorage / localStorage) to use, defaults to sessionStorage
+   * Get the instance of Storage interface to use.
+   * Defaults to sessionStorage.
    * @return {Storage}
    */
   private getStore(): Storage {
