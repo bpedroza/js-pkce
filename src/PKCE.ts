@@ -128,8 +128,9 @@ export default class PKCE {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
-    }).then((response) => response.ok)
-    .catch(() => false);
+    })
+      .then((response) => response.ok)
+      .catch(() => false);
   }
 
   private checkEndpoint(propertyName: string) {
