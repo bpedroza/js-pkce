@@ -14,16 +14,33 @@ describe('Test PKCE authorization url', () => {
   it('Should build an authorization url', () => {
     const instance = new PKCE(config);
     const url = instance.authorizeUrl();
+    const {searchParams, hostname } = new URL(url);
 
-    expect(url).toContain(config.authorization_endpoint);
-    expect(url).toContain('?response_type=code');
-    expect(url).toContain('&client_id=' + config.client_id);
-    expect(url).toContain('&state=');
-    expect(url).toContain('&scope=*');
-    expect(url).toContain('&redirect_uri=' + encodeURIComponent(config.redirect_uri));
-    expect(url).toContain('&code_challenge=');
+    expect(config.authorization_endpoint).toContain(hostname);
+    expect(searchParams.get('response_type')).toEqual('code');
+    expect(searchParams.get('client_id')).toEqual(config.client_id);
+    expect(searchParams.get('state')).toEqual(instance.getState());
+    expect(searchParams.get('scope')).toEqual('*');
+    expect(searchParams.get('code_challenge')).not.toBeNull();
+    expect(searchParams.get('code_challenge_method')).toEqual('S256');
+    expect(url).toContain(`redirect_uri=${encodeURIComponent(config.redirect_uri)}`);
     expect(url).not.toContain('%3D');
-    expect(url).toContain('&code_challenge_method=S256');
+  });
+
+  it('Should generate a unique state and code challenge for each call', () => {
+    const instance = new PKCE(config);
+    const params = new URL(instance.authorizeUrl()).searchParams;
+    const params2 = new URL(instance.authorizeUrl()).searchParams;
+
+    expect(params.get('code_challenge')).not.toBeNull();
+    expect(params2.get('code_challenge')).not.toBeNull();
+    expect(params.get('state')).not.toBeNull();
+    expect(params2.get('state')).not.toBeNull();
+
+    expect(params.get('code_challenge')).not.toEqual(params2.get('code_challenge'));
+    expect(params.get('state')).not.toEqual(params2.get('state'));
+
+    expect(instance.getState()).toEqual(params2.get('state'));
   });
 
   it('Should include additional parameters', () => {
@@ -41,7 +58,7 @@ describe('Test PKCE authorization url', () => {
     const url = instance.authorizeUrl({state: 'Anewteststate'});
 
     expect(url).toContain('&state=Anewteststate');
-    expect(sessionStorage.getItem('pkce_state')).toEqual('Anewteststate');
+    expect(instance.getState()).toEqual('Anewteststate');
   });
 });
 
@@ -52,7 +69,7 @@ describe('Test PKCE exchange code for token', () => {
     const instance = new PKCE(config);
 
     try {
-      const token = await instance.exchangeForAccessToken(url);
+      await instance.exchangeForAccessToken(url);
     } catch (e) {
       expect(e).toEqual({
         error: 'Test Failure',
@@ -66,7 +83,7 @@ describe('Test PKCE exchange code for token', () => {
     const instance = new PKCE(config);
 
     try {
-      const token = await instance.exchangeForAccessToken(url);
+      await instance.exchangeForAccessToken(url);
     } catch (e) {
       expect(e).toEqual({
         error: 'Invalid State',
@@ -76,28 +93,21 @@ describe('Test PKCE exchange code for token', () => {
 
   it('Should make a request to token endpoint', async () => {
     await mockRequest();
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
+    const headers = fetch.mock.calls[0][1]?.headers ?? [];
 
     expect(fetch.mock.calls.length).toEqual(1);
     expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint);
-  });
-
-  it('Should request with headers', async () => {
-    await mockRequest();
-    const headers = fetch.mock.calls[0][1]?.headers ?? [];
 
     expect(headers['Accept']).toEqual('application/json');
     expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
-  });
-
-  it('Should request with body', async () => {
-    await mockRequest();
-    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
-
     expect(body.get('grant_type')).toEqual('authorization_code');
     expect(body.get('code')).toEqual('123');
     expect(body.get('client_id')).toEqual(config.client_id);
     expect(body.get('redirect_uri')).toEqual(config.redirect_uri);
     expect(body.get('code_verifier')).not.toEqual(null);
+    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined();
+    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined();
   });
 
   it('Should request with additional parameters', async () => {
@@ -122,22 +132,10 @@ describe('Test PKCE exchange code for token', () => {
     expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined();
   });
 
-  it('Should not have cors credentials options set when not specified', async () => {
-    await mockRequest({}, null)
-    expect(fetch.mock.calls[0][1]?.mode).toBeUndefined();
-    expect(fetch.mock.calls[0][1]?.credentials).toBeUndefined();
-  });
-
   it('Should return token', async () => {
     const result = await mockRequest({});
     expect(result.access_token).toEqual('token');
   });
-
-  /* @TODO breaking change - implement in v2.0 it('Should clear storage after token exchange', async () => {
-    await mockRequest({}, false);
-    expect(sessionStorage.getItem('pkce_code_verifier')).toEqual(null);
-    expect(sessionStorage.getItem('pkce_state')).toEqual(null);
-  }); */ 
 
   async function mockRequest(additionalParams: object = {}, enableCorsCredentials: boolean|null = null): Promise<ITokenResponse> {
     sessionStorage.setItem('pkce_state', 'teststate');
@@ -169,28 +167,17 @@ describe('Test PCKE refresh token', () => {
 
   it('Should make a request to token endpoint', async () => {
     await mockRequest();
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
+    const headers = fetch.mock.calls[0][1]?.headers ?? [];
 
     expect(fetch.mock.calls.length).toEqual(1);
     expect(fetch.mock.calls[0][0]).toEqual(config.token_endpoint);
-  });
-
-  it('Should request with headers', async () => {
-    await mockRequest();
-    const headers = fetch.mock.calls[0][1]?.headers ?? [];
-
-    expect(headers['Accept']).toEqual('application/json');
-    expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
-  });
-
-  it('Should request with body', async () => {
-    await mockRequest();
-    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
-
     expect(body.get('grant_type')).toEqual('refresh_token');
     expect(body.get('client_id')).toEqual(config.client_id);
     expect(body.get('refresh_token')).toEqual(refreshToken);
+    expect(headers['Accept']).toEqual('application/json');
+    expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
   });
-
 
   async function mockRequest() {
     const instance = new PKCE(config);
@@ -217,41 +204,16 @@ describe('Test PCKE revoke token', () => {
   it('Should make a request to revoke token endpoint', async () => {
     const url = 'https://example.com/revoke';
     const ok = await mockRequest({revoke_endpoint: url});
+    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
+    const headers = fetch.mock.calls[0][1]?.headers ?? [];
 
     expect(ok).toEqual(true);
     expect(fetch.mock.calls.length).toEqual(1);
     expect(fetch.mock.calls[0][0]).toEqual(url);
-  });
-
-  it('Should return false on error response', async () => {
-    const instance = new PKCE({
-      ...config,
-      revoke_endpoint: 'https://example.com/revoke'
-    });
-
-    fetch.resetMocks();
-    fetch.mockReject(new Error('fake error message'))
-    const ok = await instance.revokeToken('atoken');
-
-    expect(ok).toEqual(false);
-  });
-
-  it('Should request with headers', async () => {
-    const url = 'https://example.com/revoke';
-    await mockRequest({revoke_endpoint: url});
-    const headers = fetch.mock.calls[0][1]?.headers ?? [];
-
-    expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
-  });
-
-  it('Should request with body', async () => {
-    const url = 'https://example.com/revoke';
-    await mockRequest({revoke_endpoint: url});
-    const body = new URLSearchParams(fetch.mock.calls[0][1]?.body?.toString());
-
     expect(body.get('token')).toEqual(tokenToExpire);
     expect(body.get('client_id')).toEqual(config.client_id);
     expect(body.get('token_type_hint')).toBeNull();
+    expect(headers['Content-Type']).toEqual('application/x-www-form-urlencoded;charset=UTF-8');
   });
 
   it('Should request with body including type hint', async () => {
@@ -263,6 +225,19 @@ describe('Test PCKE revoke token', () => {
     expect(body.get('token')).toEqual(tokenToExpire);
     expect(body.get('client_id')).toEqual(config.client_id);
     expect(body.get('token_type_hint')).toEqual(hint);
+  });
+
+  it('Should return false on error response', async () => {
+    const instance = new PKCE({
+      ...config,
+      revoke_endpoint: 'https://example.com/revoke'
+    });
+
+    fetch.resetMocks();
+    fetch.mockResponseOnce('', {status: 503})
+    const ok = await instance.revokeToken('atoken');
+
+    expect(ok).toEqual(false);
   });
 
   it('Should throw an error when not https and not localhost', async () => {
@@ -303,7 +278,7 @@ describe('Test PCKE revoke token', () => {
 
 
 describe('Test storage types', () => {
-  it('Should default to sessionStorage, localStorage emtpy', async () => {
+  it('Should default to sessionStorage, localStorage empty', async () => {
     sessionStorage.removeItem('pkce_code_verifier');
     localStorage.removeItem('pkce_code_verifier');
 
@@ -314,7 +289,7 @@ describe('Test storage types', () => {
     expect(localStorage.getItem('pkce_code_verifier')).toEqual(null);
   });
 
-  it('Should allow for using localStorage, sessionStorage emtpy', async () => {
+  it('Should allow for using localStorage, sessionStorage empty', async () => {
     sessionStorage.removeItem('pkce_code_verifier');
     localStorage.removeItem('pkce_code_verifier');
 
