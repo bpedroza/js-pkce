@@ -108,7 +108,7 @@ export default class PKCE {
     return await response.json();
   }
 
-  public async revokeToken(tokenToExpire: string, hint: string = '') {
+  public async revokeToken(tokenToExpire: string, hint: string = ''): Promise<boolean> {
     this.checkEndpoint('revoke_endpoint');
     const params = new URLSearchParams({
       token: tokenToExpire,
@@ -123,7 +123,9 @@ export default class PKCE {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
-    }).then((response) => response.json());
+    })
+      .then((response) => response.ok)
+      .catch(() => false);
   }
 
   private checkEndpoint(propertyName: string) {
