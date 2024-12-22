@@ -216,10 +216,24 @@ describe('Test PCKE revoke token', () => {
 
   it('Should make a request to revoke token endpoint', async () => {
     const url = 'https://example.com/revoke';
-    await mockRequest({revoke_endpoint: url});
+    const ok = await mockRequest({revoke_endpoint: url});
 
+    expect(ok).toEqual(true);
     expect(fetch.mock.calls.length).toEqual(1);
     expect(fetch.mock.calls[0][0]).toEqual(url);
+  });
+
+  it('Should return false on error response', async () => {
+    const instance = new PKCE({
+      ...config,
+      revoke_endpoint: 'https://example.com/revoke'
+    });
+
+    fetch.resetMocks();
+    fetch.mockReject(new Error('fake error message'))
+    const ok = await instance.revokeToken('atoken');
+
+    expect(ok).toEqual(false);
   });
 
   it('Should request with headers', async () => {
