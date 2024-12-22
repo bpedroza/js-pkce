@@ -44,20 +44,16 @@ export default class PKCE {
   public authorizeUrl(additionalParams: IObject = {}): string {
     const codeChallenge = this.pkceChallengeFromVerifier();
 
-    const queryString = new URLSearchParams(
-      Object.assign(
-        {
-          response_type: 'code',
-          client_id: this.config.client_id,
-          state: this.getState(additionalParams.state || null),
-          scope: this.config.requested_scopes,
-          redirect_uri: this.config.redirect_uri,
-          code_challenge: codeChallenge,
-          code_challenge_method: 'S256',
-        },
-        additionalParams,
-      ),
-    ).toString();
+    const queryString = new URLSearchParams({
+      response_type: 'code',
+      client_id: this.config.client_id,
+      state: this.getState(additionalParams.state || null),
+      scope: this.config.requested_scopes,
+      redirect_uri: this.config.redirect_uri,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
+      ...additionalParams
+    }).toString();
 
     return `${this.config.authorization_endpoint}?${queryString}`;
   }
@@ -68,29 +64,26 @@ export default class PKCE {
    * @param  {object} additionalParams include additional parameters in the request body
    * @return {Promise<ITokenResponse>}
    */
-  public exchangeForAccessToken(url: string, additionalParams: IObject = {}): Promise<ITokenResponse> {
-    return this.parseAuthResponseUrl(url).then((q) => {
-      return fetch(this.config.token_endpoint, {
-        method: 'POST',
-        body: new URLSearchParams(
-          Object.assign(
-            {
-              grant_type: 'authorization_code',
-              code: q.code,
-              client_id: this.config.client_id,
-              redirect_uri: this.config.redirect_uri,
-              code_verifier: this.getCodeVerifier(),
-            },
-            additionalParams,
-          ),
-        ),
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        },
-        ...this.corsRequestOptions,
-      }).then((response) => response.json());
+  public async exchangeForAccessToken(url: string, additionalParams: IObject = {}): Promise<ITokenResponse> {
+    const { code } = await this.parseAuthResponseUrl(url);
+    const response = await fetch(this.config.token_endpoint, {
+      method: 'POST',
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        client_id: this.config.client_id,
+        redirect_uri: this.config.redirect_uri,
+        code_verifier: this.getCodeVerifier(),
+        ...additionalParams
+      }),
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      ...this.corsRequestOptions,
     });
+
+    return await response.json();
   }
 
   /**
@@ -98,8 +91,8 @@ export default class PKCE {
    * @param  refreshTokens current refresh token from server
    * @return {Promise<ITokenResponse>}
    */
-  public refreshAccessToken(refreshToken: string): Promise<ITokenResponse> {
-    return fetch(this.config.token_endpoint, {
+  public async refreshAccessToken(refreshToken: string): Promise<ITokenResponse> {
+    const response = await fetch(this.config.token_endpoint, {
       method: 'POST',
       body: new URLSearchParams({
         grant_type: 'refresh_token',
@@ -110,10 +103,12 @@ export default class PKCE {
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
-    }).then((response) => response.json());
+    });
+
+    return await response.json();
   }
 
-  public revokeToken(tokenToExpire: string, hint: string = '') {
+  public async revokeToken(tokenToExpire: string, hint: string = '') {
     this.checkEndpoint('revoke_endpoint');
     const params = new URLSearchParams({
       token: tokenToExpire,
