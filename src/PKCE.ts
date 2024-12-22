@@ -23,21 +23,6 @@ export default class PKCE {
   }
 
   /**
-   * Allow the user to enable cross domain cors requests
-   * @param  enable turn the cross domain request options on.
-   * @return ICorsOptions
-   */
-  public enableCorsCredentials(enable: boolean): ICorsOptions {
-    this.corsRequestOptions = enable
-      ? {
-          credentials: 'include',
-          mode: 'cors',
-        }
-      : {};
-    return this.corsRequestOptions;
-  }
-
-  /**
    * Generate the authorize url
    * @param  {object} additionalParams include additional parameters in the query
    * @return Promise<string>
@@ -55,10 +40,25 @@ export default class PKCE {
       redirect_uri: this.config.redirect_uri,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
-      ...additionalParams
+      ...additionalParams,
     }).toString();
 
     return `${this.config.authorization_endpoint}?${queryString}`;
+  }
+
+  /**
+   * Allow the user to enable cross domain cors requests
+   * @param  enable turn the cross domain request options on.
+   * @return ICorsOptions
+   */
+  public enableCorsCredentials(enable: boolean): ICorsOptions {
+    this.corsRequestOptions = enable
+      ? {
+          credentials: 'include',
+          mode: 'cors',
+        }
+      : {};
+    return this.corsRequestOptions;
   }
 
   /**
@@ -73,11 +73,11 @@ export default class PKCE {
       method: 'POST',
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        code: code,
+        code,
         client_id: this.config.client_id,
         redirect_uri: this.config.redirect_uri,
         code_verifier: this.getCodeVerifier(),
-        ...additionalParams
+        ...additionalParams,
       }),
       headers: {
         Accept: 'application/json',
@@ -87,6 +87,34 @@ export default class PKCE {
     });
 
     return await response.json();
+  }
+
+  /**
+   * Get the current codeVerifier
+   * @return {string}
+   */
+  public getCodeVerifier(): string {
+    const codeVerifier = this.getStore().getItem(this.CODE_VERIFIER_KEY);
+
+    if (null === codeVerifier) {
+      throw new Error('Code Verifier not set.');
+    }
+
+    return codeVerifier;
+  }
+
+  /**
+   * Get the current state
+   * @return {string}
+   */
+  public getState(): string {
+    const state = this.getStore().getItem(this.STATE_KEY);
+
+    if (null === state) {
+      throw new Error('State not set.');
+    }
+
+    return state;
   }
 
   /**
@@ -112,11 +140,11 @@ export default class PKCE {
   }
 
   /**
-   * Revoke an existing token. 
+   * Revoke an existing token.
    * Optionally send a token_type_hint as second parameter
    * @param {string} tokenToExpire the token to be expired
    * @param {string} hint when not empty, token_type_hint will be sent with request
-   * @returns 
+   * @returns
    */
   public async revokeToken(tokenToExpire: string, hint: string = ''): Promise<boolean> {
     this.checkEndpoint('revoke_endpoint');
@@ -139,34 +167,6 @@ export default class PKCE {
     });
 
     return response.ok;
-  }
-
-  /**
-   * Get the current codeVerifier
-   * @return {string}
-   */
-  public getCodeVerifier(): string {
-    const codeVerifier = this.getStore().getItem(this.CODE_VERIFIER_KEY);
-
-    if(null === codeVerifier) {
-      throw new Error('Code Verifier not set.');
-    }
-
-    return codeVerifier;
-  }
-
-  /**
-   * Get the current state
-   * @return {string}
-   */
-  public getState(): string {
-    const state = this.getStore().getItem(this.STATE_KEY);
-
-    if(null === state) {
-      throw new Error('State not set.');
-    }
-
-    return state;
   }
 
   /**
@@ -228,7 +228,7 @@ export default class PKCE {
   }
 
   /**
-   * Set the state in storage to a random string. 
+   * Set the state in storage to a random string.
    * Optionally set an explicit state
    * @param {string | null} explicit when set, we will use this value for the state value
    * @return {void}

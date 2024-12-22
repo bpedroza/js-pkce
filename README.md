@@ -1,7 +1,18 @@
 ![Build Status](https://github.com/bpedroza/js-pkce/actions/workflows/run-tests.yml/badge.svg)
 
 # js-pkce
-A package that makes using the OAuth2 PKCE flow easier
+A package that makes using the OAuth2 PKCE flow easier.
+
+This package is implemented according to [the specification: rfc7636](https://datatracker.ietf.org/doc/html/rfc7636).
+
+## Use from CDN
+Since version 1.3.0 this package is available to be used from a CDN:
+
+https://cdn.jsdelivr.net/npm/js-pkce/dist/browser.js
+
+Explicit version example:
+
+https://cdn.jsdelivr.net/npm/js-pkce@1.5/dist/browser.js
 
 ## Installation
 `npm i js-pkce`
