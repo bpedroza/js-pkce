@@ -113,7 +113,7 @@ export default class PKCE {
     }).then((response) => response.json());
   }
 
-  public revokeToken(tokenToExpire: string, hint: string = '') {
+  public revokeToken(tokenToExpire: string, hint: string = ''): Promise<boolean> {
     this.checkEndpoint('revoke_endpoint');
     const params = new URLSearchParams({
       token: tokenToExpire,

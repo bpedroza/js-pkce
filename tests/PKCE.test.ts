@@ -223,7 +223,6 @@ describe('Test PCKE revoke token', () => {
     expect(fetch.mock.calls[0][0]).toEqual(url);
   });
 
-
   it('Should return false on error response', async () => {
     const instance = new PKCE({
       ...config,
